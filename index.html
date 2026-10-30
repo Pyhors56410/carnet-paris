@@ -596,6 +596,9 @@ body.vue-carte #adresses { display: none; }
 .itin-liste .num { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--c, var(--email)); color: #fff; font-weight: 600; font-size: .75rem; border: 2px solid #fff; grid-row: span 2; }
 .itin-liste .num.carre { border-radius: 5px; }
 .itin-liste b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.itin-liste b.itin-nom { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.itin-nom .nom-lien { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.itin-duree { margin-left: auto; flex: none; font-size: .74rem; font-weight: 600; color: var(--laiton-vif); background: rgba(214, 168, 78, .12); border: 1px solid rgba(214, 168, 78, .4); border-radius: 999px; padding: 1px 8px; }
 .itin-liste small { color: var(--muted); font-size: .74rem; }
 .itin-liste .via { grid-template-columns: 26px minmax(0, 1fr); padding: 0 14px; font-size: .72rem; color: var(--muted); }
 .itin-liste .via span:first-child { justify-self: center; }
@@ -2629,7 +2632,7 @@ function itinHtml(k, p) {
       const nom = spec ? (nd.id === "hotel" ? "Hôtel Exe Paris Centre" : "Gare Montparnasse") : nd.l.nom;
       const coul = spec ? (nd.id === "gare" ? "#3a4a57" : "#1f4c8f") : TEINTES_CARTE[nd.l.theme];
       if (i > 0) { const s = segs[i - 1], m = MODES_ITIN[s.mode]; liste += `<li class="via" style="--t:${tSeg[i - 1].toFixed(2)}s"><span>↓</span><span>${m.ico} ${m.lbl}${s.min != null ? `, ${s.min} min` : ""}</span></li>`; }
-      liste += `<li data-itin-li="${nd.ref.lettre}" style="--t:${tNoeud[i].toFixed(2)}s"><span class="num${spec ? " carre" : ""}" style="--c:${coul}">${nd.ref.lettre}</span><b>${nd.l ? `<button type="button" class="nom-lien" data-fiche="${nd.l.id}">${esc(nom)}</button>` : esc(nom)}</b><small>${nd.heure != null ? heure(nd.heure) : ""}${nd.l ? ` · ${esc(nd.l.type)}` : ""}</small></li>`;
+      liste += `<li data-itin-li="${nd.ref.lettre}" style="--t:${tNoeud[i].toFixed(2)}s"><span class="num${spec ? " carre" : ""}" style="--c:${coul}">${nd.ref.lettre}</span><b class="itin-nom">${nd.l ? `<button type="button" class="nom-lien" data-fiche="${nd.l.id}">${esc(nom)}</button><span class="itin-duree" title="Planned time on site">${duree(dureeDe(nd.l.id))}</span>` : esc(nom)}</b><small>${nd.heure != null ? heure(nd.heure) : ""}${nd.l ? ` · ${esc(nd.l.type)}` : ""}</small></li>`;
     });
     const km = segs.reduce((s, x) => s + x.km, 0), minT = segs.reduce((s, x) => s + (x.min || 0), 0), nbLieux = n;
     return `<div class="itin" data-itin="${k}">
