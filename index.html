@@ -497,19 +497,23 @@ body.vue-carte #adresses { display: none; }
 .carnet .programme .trajet .trajet-lbl em { display: inline; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--laiton); font-size: .76rem; }
 .carnet .programme .trajet .opts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
 .carnet .programme .trajet .opt.info { border-style: dashed; }
-.horaires { border: 1px solid var(--ligne); border-radius: var(--rayon); padding: 10px 12px; margin: 0 0 14px; font-size: .82rem; }
-.horaires .h-titre { margin: 0 0 6px; font-weight: 600; }
-.horaires .h-titre small { display: block; font-weight: 400; color: var(--muted); font-size: .76rem; }
-.h-jour { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 4px 8px; padding: 6px 0; border-top: 1px dotted var(--ligne); }
-.h-jour > b { grid-row: span 2; align-self: start; padding-top: 5px; }
-.h-jour > label, .h-jour > small { grid-column: 2; }
-.h-jour > b { min-width: 52px; font-weight: 600; }
-.h-jour small { color: var(--muted); font-size: .72rem; }
-.h-champ { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .76rem; }
-.h-champ span { min-width: 118px; }
-.h-champ input { font: inherit; font-size: .84rem; color: var(--encre); background: var(--carte); border: 1px solid var(--ligne); border-radius: 4px; padding: 3px 5px; min-width: 92px; }
-#programme .horaires { max-width: 760px; margin-bottom: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0 18px; }
-#programme .horaires .h-titre { grid-column: 1 / -1; }
+.horaires { border: 1px solid var(--ligne); border-radius: var(--rayon); padding: 12px; margin: 0 0 14px; font-size: .82rem; }
+.horaires .h-titre { margin: 0 0 10px; font-weight: 600; font-size: .9rem; }
+.horaires .h-titre small { display: block; font-weight: 400; color: var(--muted); font-size: .76rem; margin-top: 2px; }
+.h-grille { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.carnet .h-grille { grid-template-columns: minmax(0, 1fr); }
+.h-jour { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--ligne); border-radius: 8px; background: rgba(255, 255, 255, .02); min-width: 0; }
+.h-jour > b { font-weight: 600; font-size: .9rem; color: var(--laiton-vif); }
+.h-champ { display: flex; flex-direction: column; gap: 3px; color: var(--muted); font-size: .74rem; }
+.carnet .h-champ { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
+.h-champ input, .h-champ strong { font: inherit; font-size: .9rem; font-weight: 500; color: var(--encre); background: var(--carte); border: 1px solid var(--ligne); border-radius: 5px; padding: 5px 8px; width: 100%; max-width: 150px; box-sizing: border-box; }
+.h-champ strong { background: transparent; border-style: dashed; }
+.h-jour small { color: var(--muted); font-size: .72rem; line-height: 1.35; }
+#programme .horaires { max-width: 860px; margin-bottom: 20px; }
+@media (max-width: 620px) { .h-grille { grid-template-columns: minmax(0, 1fr); } .h-champ { flex-direction: row; align-items: center; justify-content: space-between; } }
+.edt-section { margin: 34px 0 10px; }
+.edt-section h3 { font-family: var(--f-titre); font-weight: 500; font-size: 1.6rem; margin: 0 0 4px; }
+.edt-section > p { margin: 0 0 12px; color: var(--muted); font-size: .86rem; }
 .carnet .programme .trajet .opt { display: grid; gap: 1px; padding: 6px 8px; border: 1px solid var(--ligne); border-radius: var(--rayon); color: var(--muted); line-height: 1.3; }
 .carnet .programme .trajet .opt .mode { font-size: .72rem; }
 .carnet .programme .trajet .opt b { color: var(--encre); font-weight: 600; font-size: .86rem; }
@@ -1454,9 +1458,11 @@ function horairesHtml() {
   try {
     const champ = (k, c, lbl, soir) => `<label class="h-champ"><span>${lbl}</span><input type="time" step="300" min="00:00" data-horaire="${k}:${c}" value="${versInput(c === "depart" && k === "lun" ? departLundi() : horaire(k, c))}"${soir ? ' data-soir="1"' : ""}></label>`;
     return `<div class="horaires" role="group" aria-labelledby="h-titre"><p class="h-titre" id="h-titre">Your hours <small>From what time can you leave the hotel, and when do you want to be back?</small></p>
-      <div class="h-jour"><b>Mon 14</b>${champ("lun", "depart", "Leave the hotel from")}${champ("lun", "retour", "Back by", true)}<small>Earliest ${heure(departMinLundi())} once the suitcases are dropped: add time to get changed and ready.</small></div>
-      <div class="h-jour"><b>Tue 15</b>${champ("mar", "depart", "Leave the hotel from")}${champ("mar", "retour", "Back by", true)}</div>
-      <div class="h-jour"><b>Wed 16</b>${champ("mer", "depart", "Leave the hotel from")}<small>Suitcases at 11 am, station by 3:15 pm.</small></div></div>`;
+      <div class="h-grille">
+      <div class="h-jour"><b>Monday 14</b>${champ("lun", "depart", "Leave the hotel from")}${champ("lun", "retour", "Back at the hotel by", true)}<small>Earliest ${heure(departMinLundi())}, once the suitcases are dropped: add time to get changed and ready.</small></div>
+      <div class="h-jour"><b>Tuesday 15</b>${champ("mar", "depart", "Leave the hotel from")}${champ("mar", "retour", "Back at the hotel by", true)}<small>Full day in Paris.</small></div>
+      <div class="h-jour"><b>Wednesday 16</b>${champ("mer", "depart", "Leave the hotel from")}<span class="h-champ"><span>Train to Rennes</span><strong>3:44 pm</strong></span><small>Suitcases picked up at 11 am, station by 3:15 pm.</small></div>
+      </div></div>`;
   } catch (e) { return ""; }
 }
 document.addEventListener("change", e => {
@@ -2470,7 +2476,7 @@ function filtrerTheme(h) {
   if (t) { const s = document.getElementById(t.ancre); if (s) window.scrollTo({ top: document.getElementById("adresses").getBoundingClientRect().top + scrollY - 70 }); }
 }
 window.addEventListener("hashchange", afficherVue);
-document.addEventListener("click", e => { try { const a = e.target.closest("[data-vue-lien]"); if (a) { etat.vueProg = a.dataset.vueLien; sauver(); if (location.hash === "#programme") rendreProgramme(); } } catch (_) {} }, true);
+document.addEventListener("click", e => { try { const a = e.target.closest("[data-vue-lien]"); if (a) setTimeout(() => { const s = document.getElementById("emploi-du-temps"); if (s) window.scrollTo({ top: s.getBoundingClientRect().top + scrollY - 80 }); }, 250); } catch (_) {} }, true);
 
 /* =====================================================================
    MON PROGRAMME — présentation jour par jour du programme organisé,
@@ -2731,7 +2737,7 @@ function rendreProgramme() {
   const mode = modeTrajet() === "taxi" ? "by taxi" : "by metro and on foot";
   const reserve = etat.selection.filter(x => x.day === "ap" && x.reserve);
   zone.innerHTML = duelHtml() + `<p class="prog-intro">Times calculated ${mode}, visit lengths included. Tap a stop to open its page; under each stop, the places from the list a few minutes’ walk away, in case you change your mind on the spot.</p>`
-    + horairesHtml() + vueChoixHtml() + (etat.vueProg === "grille" ? emploiDuTempsHtml() : JOURS_SEJOUR.map(k => {
+    + horairesHtml() + (JOURS_SEJOUR.map(k => {
       const j = JOURNEES[k], p = programme(k);
       return `<section class="prog-jour" aria-labelledby="pj-${k}">
         <header class="prog-tete"><p class="prog-date">${j.titre.split(" ")[0]}<b>${j.titre.split(" ")[1]}</b>${j.titre.split(" ")[2]}</p>
@@ -2761,6 +2767,7 @@ function rendreProgramme() {
     + (etat.selection.some(x => x.day === "ap" && x.horsRoute && !x.reserve) ? `<p class="prog-reste">If on the way, not near the route this time: ${etat.selection.filter(x => x.day === "ap" && x.horsRoute && !x.reserve).map(x => `<a href="#lieu-${x.id}">${esc(parId[x.id].nom)}</a>`).join(", ")}.</p>` : "")
     + (etat.selection.some(x => x.day === "ap" && !x.reserve && !x.horsRoute) ? `<p class="prog-reste">Not organised yet: ${etat.selection.filter(x => x.day === "ap" && !x.reserve && !x.horsRoute).map(x => `<a href="#lieu-${x.id}">${esc(parId[x.id].nom)}</a>`).join(", ")}.</p>` : "")
     + `<p class="note-trajets">Journeys estimated from distance (metro: Métro-Train-RER ticket at ${eur(TARIFS.metro)} per person, 2026 fare; taxi on the meter, to be checked). Closing days and opening hours: check before booking.</p>`;
+  try { zone.insertAdjacentHTML("beforeend", `<section class="edt-section" id="emploi-du-temps" aria-labelledby="edt-titre"><h3 id="edt-titre">Timetable</h3><p>The three days side by side: days in columns, hours in rows.</p>${emploiDuTempsHtml()}</section>`); } catch (_) {}
   activerItin();
 }
 
