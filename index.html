@@ -495,7 +495,21 @@ body.vue-carte #adresses { display: none; }
 .carnet .programme .trajet::before { left: 1.6em; top: 8px; bottom: 8px; }
 .carnet .programme .trajet .trajet-lbl { display: block; font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
 .carnet .programme .trajet .trajet-lbl em { display: inline; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--laiton); font-size: .76rem; }
-.carnet .programme .trajet .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.carnet .programme .trajet .opts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+.carnet .programme .trajet .opt.info { border-style: dashed; }
+.horaires { border: 1px solid var(--ligne); border-radius: var(--rayon); padding: 10px 12px; margin: 0 0 14px; font-size: .82rem; }
+.horaires .h-titre { margin: 0 0 6px; font-weight: 600; }
+.horaires .h-titre small { display: block; font-weight: 400; color: var(--muted); font-size: .76rem; }
+.h-jour { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 4px 8px; padding: 6px 0; border-top: 1px dotted var(--ligne); }
+.h-jour > b { grid-row: span 2; align-self: start; padding-top: 5px; }
+.h-jour > label, .h-jour > small { grid-column: 2; }
+.h-jour > b { min-width: 52px; font-weight: 600; }
+.h-jour small { color: var(--muted); font-size: .72rem; }
+.h-champ { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .76rem; }
+.h-champ span { min-width: 118px; }
+.h-champ input { font: inherit; font-size: .84rem; color: var(--encre); background: var(--carte); border: 1px solid var(--ligne); border-radius: 4px; padding: 3px 5px; min-width: 92px; }
+#programme .horaires { max-width: 760px; margin-bottom: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0 18px; }
+#programme .horaires .h-titre { grid-column: 1 / -1; }
 .carnet .programme .trajet .opt { display: grid; gap: 1px; padding: 6px 8px; border: 1px solid var(--ligne); border-radius: var(--rayon); color: var(--muted); line-height: 1.3; }
 .carnet .programme .trajet .opt .mode { font-size: .72rem; }
 .carnet .programme .trajet .opt b { color: var(--encre); font-weight: 600; font-size: .86rem; }
@@ -517,6 +531,38 @@ body.vue-carte #adresses { display: none; }
 .itin-carte { position: relative; background: #e9e6df; min-height: 380px; }
 .itin-carte svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .itin-carte .fond { filter: saturate(.55) brightness(.92); }
+.itin .fantome { opacity: .45; cursor: pointer; transition: opacity .2s; }
+.itin .fantome:hover, .itin .fantome.cible { opacity: 1; }
+.itin .fantome.cible circle { stroke: #f3c46b; }
+.itin .fantome-nom { opacity: 0; pointer-events: none; font-family: var(--f-texte); font-weight: 600; fill: #fff; stroke: rgba(16, 23, 29, .9); paint-order: stroke; transition: opacity .15s; }
+.itin .fantome:hover .fantome-nom, .itin .fantome.cible .fantome-nom { opacity: 1; }
+.itin .seg-prise { fill: none; stroke: transparent; pointer-events: stroke; cursor: grab; touch-action: none; }
+.itin .pt.glissable { cursor: grab; touch-action: none; }
+.itin.glisse, .itin.glisse * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
+.glisse-calque { pointer-events: none; }
+.itin-astuce { flex-basis: 100%; margin: 0 !important; font-size: .74rem !important; }
+.itin-msg { flex-basis: 100%; margin: 0 !important; font-size: .8rem !important; color: var(--laiton-vif) !important; }
+.itin-msg:empty { display: none; }
+.vue-choix { margin: 0 0 16px; }
+.lien-edt { margin: 10px 0 0; font-size: .82rem; }
+.lien-edt a { color: var(--laiton-vif); }
+.edt-cadre { overflow-x: auto; border: 1px solid var(--ligne); border-radius: 10px; background: rgba(13, 19, 26, .6); margin: 0 0 12px; }
+.edt { display: grid; grid-template-columns: 48px repeat(3, minmax(108px, 1fr)); min-width: 380px; }
+.edt-tete { padding: 10px 8px; border-left: 1px solid var(--ligne); border-bottom: 1px solid var(--ligne); font-size: .74rem; color: var(--muted); }
+.edt-coin { border-bottom: 1px solid var(--ligne); }
+.edt-tete b { display: block; color: var(--encre); font-size: .9rem; font-weight: 600; }
+.edt-tete em { display: block; font-style: normal; color: var(--alerte); }
+.edt-heures { position: relative; }
+.edt-heures span { position: absolute; left: 6px; transform: translateY(-50%); font-size: .66rem; color: var(--muted); white-space: nowrap; }
+.edt-col { position: relative; border-left: 1px solid var(--ligne); overflow: hidden; }
+.edt-ligne { position: absolute; left: 0; right: 0; border-top: 1px solid rgba(255, 255, 255, .06); }
+.edt-off { position: absolute; left: 0; right: 0; background: repeating-linear-gradient(45deg, rgba(255, 255, 255, .05) 0 6px, transparent 6px 12px); }
+.edt-bloc { position: absolute; left: 4px; right: 4px; z-index: 2; display: flex; flex-direction: column; gap: 1px; overflow: hidden; text-align: left; font: inherit; font-size: .72rem; line-height: 1.2; color: var(--encre); padding: 3px 6px; border: 0; border-left: 4px solid var(--c); border-radius: 5px; background: rgba(36, 48, 60, .95); background: color-mix(in srgb, var(--c) 30%, #141c24); cursor: pointer; }
+.edt-bloc b { font-weight: 600; }
+.edt-bloc span { color: var(--muted); font-size: .66rem; }
+.edt-trajet { position: absolute; left: 16px; right: 4px; z-index: 1; display: flex; align-items: center; overflow: hidden; border-left: 2px dotted var(--muted); padding-left: 6px; font-size: .62rem; color: var(--muted); white-space: nowrap; }
+.edt-fixe { position: absolute; left: 0; right: 0; z-index: 3; border-top: 1px dashed var(--laiton); }
+.edt-fixe span { position: absolute; right: 2px; top: -1px; max-width: calc(100% - 4px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .58rem; color: var(--laiton-vif); background: rgba(16, 23, 29, .88); padding: 0 4px; border-radius: 3px; }
 .itin .seg { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
 .itin .seg-ombre { fill: none; stroke: rgba(16, 23, 29, .45); stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
 .itin .pt, .itin .puce-mode { opacity: 0; transform-box: fill-box; transform-origin: center; }
@@ -1272,7 +1318,7 @@ LIEUX.splice(0, LIEUX.length, ...LIEUX.filter(l => !HORS_PARIS.includes(l.id)));
 const parId = Object.fromEntries(LIEUX.map(l => [l.id, l]));
 
 let etat = { selection: [], formulaire: {} };
-try { const s = JSON.parse(localStorage.getItem(CLE_STOCKAGE)); if (s && Array.isArray(s.selection)) etat = { selection: s.selection.filter(x => parId[x.id]), formulaire: s.formulaire || {}, patinoire: !!s.patinoire, mode: s.mode }; } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem(CLE_STOCKAGE)); if (s && Array.isArray(s.selection)) etat = { selection: s.selection.filter(x => parId[x.id]), formulaire: s.formulaire || {}, patinoire: !!s.patinoire, mode: s.mode, horaires: s.horaires && typeof s.horaires === "object" ? s.horaires : {}, vueProg: s.vueProg }; } catch (e) {}
 let depenses = { saisies: {}, ajouts: [], visites: {}, libres: [], maj: 0 };
 try { const d = JSON.parse(localStorage.getItem(CLE_STOCKAGE + "-depenses")); if (d && typeof d === "object") depenses = { ...depenses, ...d }; } catch (e) {}
 // anciennes sélections « Jour 1 / Jour 2 » : Jour 1 devient lundi, Jour 2 mardi
@@ -1393,6 +1439,41 @@ const JOURNEES = {
   mer: { titre: "Wednesday 16 December", sous: "Until 11 am, then a restaurant and the 3:44 pm train", debut: H(9, 30), fin: H(15, 15), departHotel: H(11, 0), moments: ["matin", "midi"] }
 };
 const HEURES_FIXES = { l20: { jour: "lun", debut: H(20, 0) } };
+/* Heures choisies par les voyageurs : départ de l'hôtel le matin (lundi : après les valises et le temps de se préparer)
+   et retour à l'hôtel le soir. Une heure du soir avant 6 h compte pour la nuit (00:30 = minuit et demi). */
+const HORAIRES_DEFAUT = { lun: { depart: null, retour: H(23, 30) }, mar: { depart: H(9, 30), retour: H(23, 0) }, mer: { depart: H(9, 30) } };
+function horaire(k, c) { const v = ((etat.horaires || {})[k] || {})[c]; return typeof v === "number" && isFinite(v) ? v : HORAIRES_DEFAUT[k][c]; }
+function appliquerHoraires() {
+  try {
+    JOURNEES.mar.debut = horaire("mar", "depart"); JOURNEES.mer.debut = Math.min(horaire("mer", "depart"), H(10, 45));
+    JOURNEES.lun.fin = horaire("lun", "retour"); JOURNEES.mar.fin = horaire("mar", "retour");
+  } catch (e) {}
+}
+appliquerHoraires();
+// lundi : départ possible au plus tôt après le trajet gare → hôtel et le dépôt des valises
+const departMinLundi = () => { const t = trajet("gare", "hotel"); return JOURNEES.lun.debut + dureeTrajet(t) + DEPOT_VALISES; };
+const departLundi = () => Math.max(departMinLundi(), horaire("lun", "depart") || 0);
+const versInput = m => { if (m == null) return ""; const v = ((Math.round(m) % 1440) + 1440) % 1440; return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`; };
+const depuisInput = (s, soir) => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ""); if (!m) return null; let v = +m[1] * 60 + +m[2]; if (soir && v < H(6)) v += 1440; return v; };
+function horairesHtml() {
+  try {
+    const champ = (k, c, lbl, soir) => `<label class="h-champ"><span>${lbl}</span><input type="time" step="900" data-horaire="${k}:${c}" value="${versInput(c === "depart" && k === "lun" ? departLundi() : horaire(k, c))}"${soir ? ' data-soir="1"' : ""}></label>`;
+    return `<div class="horaires" role="group" aria-labelledby="h-titre"><p class="h-titre" id="h-titre">Your hours <small>From what time can you leave the hotel, and when do you want to be back?</small></p>
+      <div class="h-jour"><b>Mon 14</b>${champ("lun", "depart", "Leave the hotel from")}${champ("lun", "retour", "Back by", true)}<small>Earliest ${heure(departMinLundi())} once the suitcases are dropped: add time to get changed and ready.</small></div>
+      <div class="h-jour"><b>Tue 15</b>${champ("mar", "depart", "Leave the hotel from")}${champ("mar", "retour", "Back by", true)}</div>
+      <div class="h-jour"><b>Wed 16</b>${champ("mer", "depart", "Leave the hotel from")}<small>Suitcases at 11 am, station by 3:15 pm.</small></div></div>`;
+  } catch (e) { return ""; }
+}
+document.addEventListener("change", e => {
+  const el = e.target.closest && e.target.closest("[data-horaire]"); if (!el) return;
+  try {
+    const [k, c] = el.dataset.horaire.split(":"); const v = depuisInput(el.value, el.dataset.soir === "1");
+    etat.horaires = etat.horaires || {}; etat.horaires[k] = etat.horaires[k] || {};
+    if (v == null) delete etat.horaires[k][c]; else etat.horaires[k][c] = v;
+    appliquerHoraires(); sauver(); rendreCarnet();
+    const msg = document.getElementById("msg-organiser"); if (msg) msg.textContent = "Hours changed: click “Organise my itinerary” again to refit the days.";
+  } catch (err) {}
+});
 /* Tarifs Île-de-France Mobilités en vigueur depuis le 1er janvier 2026 (plein tarif, par personne).
    Sources : grille officielle IDFM 2026, page du ticket Métro-Train-RER, conditions du Navigo Liberté+. */
 const TARIFS = {
@@ -1444,9 +1525,11 @@ function trajet(a, b) {
   const metro = Math.round(apied ? km / 4.5 * 60 : 10 + km * 2.5 + 3);
   const taxiMin = Math.round(5 + km / 18 * 60);
   const taxiEur = Math.max(8, Math.round(4.5 + km * 1.5 + taxiMin * 0.35));
-  return { km, apied, metro, taxiMin, taxiEur, metroEur: apied ? 0 : TICKET * VOYAGEURS };
+  return { km, apied, metro, taxiMin, taxiEur, metroEur: apied ? 0 : TICKET * VOYAGEURS, marche: Math.round(km / 4.5 * 60) };
 }
 const modeTrajet = () => etat.mode === "taxi" ? "taxi" : "metro";
+// temps à pied affiché en plus du métro et du taxi, sauf hôtel ↔ gare (valises) et au-delà de 3,5 km
+const marcheUtile = (t, de, vers) => !!t && !t.apied && t.km <= 3.5 && !([de, vers].includes("gare") && [de, vers].includes("hotel"));
 const dureeTrajet = t => t ? (modeTrajet() === "taxi" ? t.taxiMin : t.metro) : 20;
 
 /* Programme horodaté d'une journée : étapes fixes, lieux et trajets. */
@@ -1454,7 +1537,7 @@ function programme(k) {
   const j = JOURNEES[k], items = listeJour(k);
   const etapes = [], alertes = [];
   let t = j.debut, ici;
-  const aller = (vers, note) => { const tr = trajet(ici, vers); etapes.push({ type: "trajet", tr, note, de: ici, vers }); t += dureeTrajet(tr); ici = vers; };
+  const aller = (vers, note) => { const tr = trajet(ici, vers); etapes.push({ type: "trajet", tr, note, de: ici, vers, debut: t, duree: dureeTrajet(tr) }); t += dureeTrajet(tr); ici = vers; };
   const visite = l => {
     const fixe = HEURES_FIXES[l.id] && HEURES_FIXES[l.id].jour === k ? HEURES_FIXES[l.id].debut : null;
     if (fixe != null) { if (t > fixe) alertes.push(`You would reach ${l.nom} around ${heure(t)}, after the ${heure(fixe)} session: remove a stop before it.`); else t = fixe; }
@@ -1471,6 +1554,7 @@ function programme(k) {
     etapes.push({ type: "fixe", debut: t, txt: "Arrival at Paris-Montparnasse (1:30 pm OUIGO)" }); ici = "gare";
     aller("hotel", "with the suitcases");
     etapes.push({ type: "fixe", debut: t, txt: "Hôtel Exe: drop off the suitcases" }); t += DEPOT_VALISES;
+    if (ordre.length) { t = Math.max(t, departLundi()); etapes.push({ type: "fixe", debut: t, txt: "Leave Hôtel Exe" }); }
   } else { ici = "hotel"; if (k === "mar" || ordre.some(l => !lieuxRepas(l))) etapes.push({ type: "fixe", debut: t, txt: "Leave Hôtel Exe" }); }
   if (k === "mer") {
     const matin = ordre.filter(l => !lieuxRepas(l)), repas = ordre.filter(lieuxRepas);
@@ -1487,7 +1571,7 @@ function programme(k) {
   } else {
     ordre.forEach(l => { aller(l.id); visite(l); });
     if (ordre.length) { aller("hotel"); etapes.push({ type: "fixe", debut: t, txt: "Back to the hotel" }); }
-    if (t > j.fin) alertes.push(`Back at the hotel around ${heure(t)}: the day is too full. Move a place to another day or to “To place”.`);
+    if (t > j.fin) alertes.push(`Back at the hotel around ${heure(t)}, later than the ${heure(j.fin)} you chose: the day is too full. Move a place to another day or to “To place”.`);
   }
   const activites = items.reduce((s, l) => s + dureeDe(l.id), 0);
   const r = etat.formulaire.rythme || "Balanced";
@@ -1504,7 +1588,8 @@ function trajetHtml(e) {
   const m = modeTrajet() === "metro";
   const metro = `<span class="opt${m ? " choisi" : ""}"><span class="mode">${t.apied ? "On foot" : "Metro + walk"}</span><b>${t.metro} min</b><i>${t.apied ? "free" : `2 tickets ${eur(t.metroEur)}`}</i></span>`;
   const taxi = `<span class="opt${m ? "" : " choisi"}"><span class="mode">Taxi</span><b>${t.taxiMin} min</b><i>~€${t.taxiEur}</i></span>`;
-  return `<li class="trajet"><span class="trajet-lbl">Journey${e.note ? ` <em>· ${e.note}</em>` : ""}</span><span class="opts">${metro}${taxi}</span></li>`;
+  const marche = marcheUtile(t, e.de, e.vers) ? `<span class="opt info"><span class="mode">Walk</span><b>${duree(t.marche)}</b><i>free, ${t.km.toFixed(1)} km</i></span>` : "";
+  return `<li class="trajet"><span class="trajet-lbl">Journey${e.note ? ` <em>· ${e.note}</em>` : ""}</span><span class="opts">${metro}${taxi}${marche}</span></li>`;
 }
 function totalJour(k) { return etat.selection.filter(x => x.day === k).reduce((s, x) => s + parId[x.id].duree, 0); }
 function ctrlLieu(l, k) {
@@ -1519,7 +1604,7 @@ function rendreCarnet() {
   const c = document.getElementById("carnet-contenu");
   const mode = modeTrajet();
   c.innerHTML = `<div class="mode-trajet" role="group" aria-label="Timing calculation"><span>Times calculated by</span>
-      <button type="button" data-mode="metro" aria-pressed="${mode === "metro"}">Metro + walk</button><button type="button" data-mode="taxi" aria-pressed="${mode === "taxi"}">Taxi</button></div>`
+      <button type="button" data-mode="metro" aria-pressed="${mode === "metro"}">Metro + walk</button><button type="button" data-mode="taxi" aria-pressed="${mode === "taxi"}">Taxi</button></div>` + horairesHtml()
     + [JOURS[JOURS.length - 1], ...JOURS.slice(0, -1)].map(([k, v]) => {
     const items = listeJour(k);
     if (k === "ap") {
@@ -1546,6 +1631,7 @@ function rendreCarnet() {
       ${items.length ? "" : `<p class="vide">${k === "mer" ? "The morning until 11 am, then a restaurant or café on the way to Montparnasse." : "No places yet."}</p>`}
     </div>`;
   }).join("")
+    + `<p class="lien-edt"><a href="#programme" data-vue-lien="grille">See the three days as a timetable</a></p>`
     + `<p class="note-trajets">Journeys estimated from distance, for ${VOYAGEURS} people. Metro: Métro-Train-RER ticket at ${eur(TARIFS.metro)} per person (2026 fare); the cheapest option is worked out in “Expenses”. Taxi: meter estimate, to be checked.</p>`;
   const n = etat.selection.length;
   document.getElementById("total-hero").textContent = n;
@@ -1592,6 +1678,7 @@ document.addEventListener("click", e => {
   else if (b.dataset.niveau) changerNiveau(b.dataset.niveau, b.dataset.niv);
   else if (b.id === "organiser") organiser();
   else if (b.dataset.mode) { etat.mode = b.dataset.mode; sauver(); rendreCarnet(); }
+  else if (b.dataset.vueProg) { etat.vueProg = b.dataset.vueProg === "grille" ? "grille" : "jours"; sauver(); rendreProgramme(); }
 });
 
 /* ---------- Jours possibles et organisation automatique ----------
@@ -1632,7 +1719,7 @@ function ordonnerJour(k, ids) {
   const dejeuner = restos.filter(id => parId[id].moments.includes("midi")).slice(0, restos.length > 1 ? 1 : (k === "lun" ? 0 : 1));
   const diners = restos.filter(id => !dejeuner.includes(id));
   // position du déjeuner : après la visite pendant laquelle on passe 12 h
-  let t = j.debut + (k === "lun" ? 45 : 0), pos = suite.length;
+  let t = k === "lun" ? departLundi() : j.debut, pos = suite.length;
   for (let i = 0; i < suite.length; i++) { t += 20 + dureeDe(suite[i]); if (t >= H(12)) { pos = i + 1; break; } }
   if (k !== "lun" && t < H(12)) pos = suite.length;
   const ordre = [...suite.slice(0, pos), ...dejeuner, ...suite.slice(pos)];
@@ -1771,11 +1858,11 @@ function recapitulatif() {
   const f = lireFormulaire();
   const niv = id => { try { return ` [${nomNiveau(niveauDe(etat.selection.find(s => s.id === id)))}]`; } catch (e) { return ""; } };
   const ligne = l => `- ${l.nom}${niv(l.id)} (${l.arr}, metro ${l.metro}) · ${duree(dureeDe(l.id))}`;
-  const tr = t => !t ? "journey to be estimated" : `${t.apied ? `on foot ${t.metro} min` : `metro + walk ${t.metro} min`} or taxi ${t.taxiMin} min (~€${t.taxiEur})`;
+  const tr = (t, de, vers) => !t ? "journey to be estimated" : `${t.apied ? `on foot ${t.metro} min` : `metro + walk ${t.metro} min`} or taxi ${t.taxiMin} min (~€${t.taxiEur})${marcheUtile(t, de, vers) ? ` or walk ${duree(t.marche)}` : ""}`;
   const bloc = (k, titre) => {
     if (k === "ap") { const it = etat.selection.filter(x => x.day === "ap"); return `${titre}\n${it.length ? it.map(x => `${ligne(parId[x.id])} · possible days: ${(x.jours && x.jours.length ? x.jours.map(d => JOURS.find(j => j[0] === d)[1]).join(", ") : "any")}`).join("\n") : "- (nothing yet)"}`; }
     const p = programme(k);
-    return `${titre}\n` + p.etapes.map(e => e.type === "trajet" ? `     ↓ ${tr(e.tr)}${e.note ? ` (${e.note})` : ""}` : e.type === "fixe" ? `${heure(e.debut)}  ${e.txt}` : `${heure(e.debut)}  ${e.l.nom}${niv(e.l.id)} (${e.l.arr}, metro ${e.l.metro}) · ${duree(e.duree)}${e.duree !== e.l.duree ? " (time adjusted)" : ""}`).join("\n") + (p.alertes.length ? `\n  ! ${p.alertes.join("\n  ! ")}` : "");
+    return `${titre}\n` + p.etapes.map(e => e.type === "trajet" ? `     ↓ ${tr(e.tr, e.de, e.vers)}${e.note ? ` (${e.note})` : ""}` : e.type === "fixe" ? `${heure(e.debut)}  ${e.txt}` : `${heure(e.debut)}  ${e.l.nom}${niv(e.l.id)} (${e.l.arr}, metro ${e.l.metro}) · ${duree(e.duree)}${e.duree !== e.l.duree ? " (time adjusted)" : ""}`).join("\n") + (p.alertes.length ? `\n  ! ${p.alertes.join("\n  ! ")}` : "");
   };
   return [
     `PARIS NOTEBOOK · Monday 14 to Wednesday 16 December 2026`,
@@ -2388,6 +2475,7 @@ function filtrerTheme(h) {
   if (t) { const s = document.getElementById(t.ancre); if (s) window.scrollTo({ top: document.getElementById("adresses").getBoundingClientRect().top + scrollY - 70 }); }
 }
 window.addEventListener("hashchange", afficherVue);
+document.addEventListener("click", e => { try { const a = e.target.closest("[data-vue-lien]"); if (a) { etat.vueProg = a.dataset.vueLien; sauver(); if (location.hash === "#programme") rendreProgramme(); } } catch (_) {} }, true);
 
 /* =====================================================================
    MON PROGRAMME — présentation jour par jour du programme organisé,
@@ -2419,7 +2507,7 @@ function itinHtml(k, p) {
       const b = pos(e.vers); if (!b || !noeuds.length) return;
       const mode = e.tr && e.tr.apied ? "walk" : modeTrajet() === "taxi" ? "taxi" : "metro";
       const min = e.tr ? (mode === "taxi" ? e.tr.taxiMin : e.tr.metro) : null;
-      segs.push({ a: noeuds[noeuds.length - 1], b, mode, min, km: e.tr ? e.tr.km : 0 });
+      segs.push({ a: noeuds[noeuds.length - 1], b, mode, min, km: e.tr ? e.tr.km : 0, ida: noeuds[noeuds.length - 1].id, idb: e.vers });
       noeuds.push({ id: e.vers, ...b, heure: heureApres(i) });
     });
     if (segs.length < 1) return "";
@@ -2448,7 +2536,7 @@ function itinHtml(k, p) {
       const qx = mx - dy / L * o, qy = my + dx / L * o;
       return { d: `M${s.a.x.toFixed(1)} ${s.a.y.toFixed(1)} Q${qx.toFixed(1)} ${qy.toFixed(1)} ${s.b.x.toFixed(1)} ${s.b.y.toFixed(1)}`, px: (s.a.x + 2 * qx + s.b.x) / 4, py: (s.a.y + 2 * qy + s.b.y) / 4, L };
     };
-    let svg = `<svg viewBox="${vx.toFixed(0)} ${vy.toFixed(0)} ${w.toFixed(0)} ${hh.toFixed(0)}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Route map for ${esc(JOURNEES[k].titre)}"><image class="fond" href="carte/paris.jpg" x="0" y="0" width="${W0}" height="${H0}" preserveAspectRatio="none"/>`
+    let svg = `<svg data-u="${u.toFixed(4)}" viewBox="${vx.toFixed(0)} ${vy.toFixed(0)} ${w.toFixed(0)} ${hh.toFixed(0)}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Route map for ${esc(JOURNEES[k].titre)}"><image class="fond" href="carte/paris.jpg" x="0" y="0" width="${W0}" height="${H0}" preserveAspectRatio="none"/>`
       + `<rect x="${vx}" y="${vy}" width="${w}" height="${hh}" fill="rgba(16,23,29,.12)"/>`;
     segs.forEach((s, i) => {
       const c = courbe(s), m = MODES_ITIN[s.mode];
@@ -2461,12 +2549,25 @@ function itinHtml(k, p) {
         svg += `<g class="puce-mode" style="--t:${(tSeg[i] + DUREE * 0.6).toFixed(2)}s"><rect x="${(c.px - bw / 2).toFixed(1)}" y="${(c.py - bh / 2).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="${(9 * u).toFixed(1)}" fill="rgba(16,23,29,.88)" stroke="${m.c}" stroke-width="${(1.2 * u).toFixed(2)}"/><text x="${c.px.toFixed(1)}" y="${(c.py + 4 * u).toFixed(1)}" text-anchor="middle" font-size="${(11 * u).toFixed(2)}" fill="#fff">${txt}</text></g>`;
       }
     });
+    // poignées pour glisser une ligne du trajet
+    segs.forEach(s => { const c = courbe(s); if (c.L < 2) return;
+      svg += `<path class="seg-prise" d="${c.d}" stroke-width="${(18 * u).toFixed(2)}" data-seg-a="${s.ida}" data-seg-b="${s.idb}" data-ax="${s.a.x.toFixed(1)}" data-ay="${s.a.y.toFixed(1)}" data-bx="${s.b.x.toFixed(1)}" data-by="${s.b.y.toFixed(1)}"/>`; });
+    // les autres adresses visibles sur ce morceau de plan, en transparence
+    try {
+      const dansJours = new Set(etat.selection.filter(s => JOURS_SEJOUR.includes(s.day)).map(s => s.id));
+      const marge = 10 * u;
+      LIEUX.filter(l => !dansJours.has(l.id)).map(l => ({ l, q: pos(l.id) })).filter(f => f.q && f.q.x > vx + marge && f.q.x < vx + w - marge && f.q.y > vy + marge && f.q.y < vy + hh - marge)
+        .map(f => ({ ...f, d: Math.min(...noeuds.map(nd => Math.hypot(nd.x - f.q.x, nd.y - f.q.y))) })).sort((a, b) => a.d - b.d).slice(0, 40)
+        .forEach(f => { const r = 8 * u;
+          svg += `<g class="fantome" data-fantome="${f.l.id}" data-x="${f.q.x.toFixed(1)}" data-y="${f.q.y.toFixed(1)}"><title>${esc(f.l.nom)}</title><circle cx="${f.q.x.toFixed(1)}" cy="${f.q.y.toFixed(1)}" r="${r.toFixed(1)}" fill="${TEINTES_CARTE[f.l.theme]}" stroke="#fff" stroke-width="${(1.6 * u).toFixed(2)}" stroke-dasharray="${(3 * u).toFixed(1)} ${(2 * u).toFixed(1)}"/><text class="fantome-nom" x="${f.q.x.toFixed(1)}" y="${(f.q.y - 13 * u).toFixed(1)}" text-anchor="middle" font-size="${(11 * u).toFixed(2)}" stroke-width="${(3 * u).toFixed(2)}">${esc(f.l.nom)}</text></g>`; });
+    } catch (_) {}
     noeuds.forEach((nd, i) => {
       if (nd.ref !== nd) return;
       const r = 13 * u, spec = nd.id === "hotel" || nd.id === "gare";
       const coul = spec ? (nd.id === "gare" ? "#3a4a57" : "#1f4c8f") : TEINTES_CARTE[nd.l ? nd.l.theme : "balade"];
       const titre = spec ? (nd.id === "hotel" ? "Hôtel Exe Paris Centre" : "Gare Montparnasse") : nd.l.nom;
-      svg += `<g class="pt" data-itin-pt="${nd.lettre}" style="--t:${tNoeud[i].toFixed(2)}s"><title>${esc(titre)}</title>`
+      const glissable = nd.l && !HEURES_FIXES[nd.id];
+      svg += `<g class="pt${glissable ? " glissable" : ""}" data-itin-pt="${nd.lettre}"${glissable ? ` data-pt-id="${nd.id}" data-x="${nd.x.toFixed(1)}" data-y="${nd.y.toFixed(1)}"` : ""} style="--t:${tNoeud[i].toFixed(2)}s"><title>${esc(titre)}${glissable ? " · drag onto a faded place to swap" : ""}</title>`
         + `<circle class="halo" cx="${nd.x.toFixed(1)}" cy="${nd.y.toFixed(1)}" r="${r.toFixed(1)}" fill="none" stroke="${coul}" stroke-width="${(2 * u).toFixed(2)}" opacity="0" style="--r0:${r.toFixed(1)}px;--r1:${(r * 2.6).toFixed(1)}px"/>`
         + (spec ? `<rect class="disque" x="${(nd.x - r).toFixed(1)}" y="${(nd.y - r).toFixed(1)}" width="${(2 * r).toFixed(1)}" height="${(2 * r).toFixed(1)}" rx="${(4 * u).toFixed(1)}" fill="${coul}" stroke="#fff" stroke-width="${(2.4 * u).toFixed(2)}"/>`
                 : `<circle class="disque" cx="${nd.x.toFixed(1)}" cy="${nd.y.toFixed(1)}" r="${r.toFixed(1)}" fill="${coul}" stroke="#fff" stroke-width="${(2.4 * u).toFixed(2)}"/>`)
@@ -2484,7 +2585,7 @@ function itinHtml(k, p) {
     });
     const km = segs.reduce((s, x) => s + x.km, 0), minT = segs.reduce((s, x) => s + (x.min || 0), 0), nbLieux = n;
     return `<div class="itin" data-itin="${k}">
-      <div class="itin-tete"><p><b>Route of the day</b> · ${nbLieux} stop${nbLieux !== 1 ? "s" : ""} · about ${km.toFixed(1)} km · ${duree(minT)} of travel</p><button type="button" class="rejouer" data-rejouer="${k}">▶ Replay the route</button></div>
+      <div class="itin-tete"><p><b>Route of the day</b> · ${nbLieux} stop${nbLieux !== 1 ? "s" : ""} · about ${km.toFixed(1)} km · ${duree(minT)} of travel</p><button type="button" class="rejouer" data-rejouer="${k}">▶ Replay the route</button><p class="itin-astuce">Faded dots are other places nearby. Drag a line of the route onto one to add it there, or drag a numbered stop onto one to swap them.</p><p class="itin-msg" role="status"></p></div>
       <div class="itin-corps"><div class="itin-carte">${svg}</div><ol class="itin-liste">${liste}</ol></div></div>`;
   } catch (err) { try { console.warn("Itinéraire :", err); } catch (_) {} return ""; }
 }
@@ -2495,9 +2596,11 @@ function jouerItin(el) {
   const nb = el.querySelectorAll(".seg").length;
   el._fin = setTimeout(() => el.classList.add("fini"), (0.3 + nb * 1.15 + 0.6) * 1000);
 }
+let itinCalme = null; // jour qu'on vient de modifier à la main : pas de nouvelle animation
 function activerItin() {
   try {
-    const els = [...document.querySelectorAll("#programme-contenu .itin")];
+    const calme = itinCalme; itinCalme = null;
+    const els = [...document.querySelectorAll("#programme-contenu .itin")].filter(el => { if (calme && el.dataset.itin === calme) { el.classList.add("joue", "fini"); return false; } return true; });
     if (!els.length) return;
     if ("IntersectionObserver" in window) {
       const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { jouerItin(e.target); io.unobserve(e.target); } }), { threshold: 0.35 });
@@ -2519,6 +2622,113 @@ try {
     } catch (_) {}
   });
 } catch (err) {}
+/* Vue « emploi du temps » : les trois jours en colonnes, à l'échelle des heures. */
+function vueChoixHtml() {
+  const g = etat.vueProg === "grille";
+  return `<div class="mode-trajet vue-choix" role="group" aria-label="Itinerary layout"><span>Show</span><button type="button" data-vue-prog="jours" aria-pressed="${!g}">Day by day</button><button type="button" data-vue-prog="grille" aria-pressed="${g}">Timetable</button></div>`;
+}
+function emploiDuTempsHtml() {
+  try {
+    const progs = {}; JOURS_SEJOUR.forEach(k => { progs[k] = programme(k); });
+    const debutG = Math.floor(Math.min(...JOURS_SEJOUR.map(k => progs[k].etapes.length ? Math.min(progs[k].etapes[0].debut, JOURNEES[k].debut) : JOURNEES[k].debut)) / 60) * 60;
+    const finG = Math.ceil(Math.max(...JOURS_SEJOUR.map(k => Math.max(progs[k].fin, JOURNEES[k].fin))) / 60) * 60;
+    const PX = 1.1, y = m => ((m - debutG) * PX).toFixed(1), haut = ((finG - debutG) * PX).toFixed(0);
+    const lignes = []; for (let m = debutG; m <= finG; m += 60) lignes.push(m);
+    const grille = lignes.map(m => `<i class="edt-ligne" style="top:${y(m)}px"></i>`).join("");
+    const tetes = JOURS_SEJOUR.map(k => { const j = JOURNEES[k], p = progs[k];
+      return `<div class="edt-tete"><b>${j.titre.replace(" December", " Dec")}</b><span>${k === "mer" ? `leave ${heure(j.debut)} · train 3:44 pm` : `leave ${heure(k === "lun" ? departLundi() : j.debut)} · back by ${heure(j.fin)}`}</span>${p.alertes.length ? `<em title="${esc(p.alertes.join(" "))}">⚠ ${p.alertes.length} alert${p.alertes.length > 1 ? "s" : ""}</em>` : ""}</div>`; }).join("");
+    const cols = JOURS_SEJOUR.map(k => {
+      const j = JOURNEES[k], p = progs[k];
+      const dispo0 = k === "lun" ? j.debut : j.debut, dispo1 = k === "mer" ? H(15, 44) : j.fin;
+      let b = grille;
+      if (dispo0 > debutG) b += `<div class="edt-off" style="top:0;height:${((dispo0 - debutG) * PX).toFixed(1)}px"></div>`;
+      if (dispo1 < finG) b += `<div class="edt-off" style="top:${y(dispo1)}px;bottom:0"></div>`;
+      p.etapes.forEach(e => {
+        if (e.type === "lieu") b += `<button type="button" class="edt-bloc" data-fiche="${e.l.id}" style="top:${y(e.debut)}px;height:${Math.max(20, e.duree * PX - 2).toFixed(1)}px;--c:${TEINTES_CARTE[e.l.theme]}"><b>${esc(e.l.nom)}</b><span>${heure(e.debut)} – ${heure(e.debut + e.duree)}</span></button>`;
+        else if (e.type === "trajet" && e.duree) { const t = e.tr, ico = !t ? "" : t.apied ? "🚶" : modeTrajet() === "taxi" ? "🚕" : "🚇";
+          b += `<div class="edt-trajet" style="top:${y(e.debut)}px;height:${Math.max(4, e.duree * PX).toFixed(1)}px">${e.duree * PX >= 13 ? `<span>${ico} ${e.duree} min${t && marcheUtile(t, e.de, e.vers) ? ` · 🚶 ${duree(t.marche)}` : ""}</span>` : ""}</div>`; }
+        else if (e.type === "fixe") b += `<div class="edt-fixe" style="top:${y(e.debut)}px"><span>${heure(e.debut)} · ${e.txt}</span></div>`;
+      });
+      return `<div class="edt-col" style="height:${haut}px">${b}</div>`;
+    }).join("");
+    const heures = `<div class="edt-heures" style="height:${haut}px">${lignes.map(m => `<span style="top:${y(m)}px">${heure(m).replace(":00", "")}</span>`).join("")}</div>`;
+    return `<div class="edt-cadre"><div class="edt"><div class="edt-coin"></div>${tetes}${heures}${cols}</div></div>
+      <p class="note-trajets">Coloured blocks: visits and meals (tap one to open its page). Dotted lines: journeys${modeTrajet() === "taxi" ? " by taxi" : " by metro and on foot"}, with the walking time when it is reasonable. Hatched: outside your hours.</p>`;
+  } catch (err) { try { console.warn("Emploi du temps :", err); } catch (_) {} return `<p class="prog-intro">The timetable could not be drawn: use “Day by day”.</p>`; }
+}
+/* Glisser sur la carte du jour : une ligne vers un lieu en transparence = l'insérer entre ces deux étapes ;
+   une étape vers un lieu en transparence = la remplacer (l'ancienne passe en attente). Souris et tactile. */
+function insererLieu(k, id, a, b) {
+  let x = etat.selection.find(s => s.id === id);
+  etat.selection = etat.selection.filter(s => s.id !== id);
+  x = { ...(x || { id, jours: [], niveau: "nice" }), day: k, reserve: false }; delete x.horsRoute;
+  if (x.jours && x.jours.length && !x.jours.includes(k)) x.jours = JOURS_SEJOUR.filter(d => x.jours.includes(d) || d === k);
+  const dansJour = v => v && v !== "hotel" && v !== "gare" && etat.selection.some(s => s.id === v && s.day === k);
+  let i = -1;
+  if (dansJour(b)) i = etat.selection.findIndex(s => s.id === b);
+  else if (dansJour(a)) i = etat.selection.findIndex(s => s.id === a) + 1;
+  else { etat.selection.forEach((s, j) => { if (s.day === k) i = j + 1; }); if (i < 0) i = etat.selection.length; }
+  etat.selection.splice(i, 0, x);
+}
+function remplacerLieu(k, ancien, nouveau) {
+  const i = etat.selection.findIndex(s => s.id === ancien); if (i < 0) return;
+  const vieux = etat.selection[i], deja = etat.selection.find(s => s.id === nouveau);
+  const neuf = { ...(deja || {}), id: nouveau, day: k, jours: vieux.jours || [], niveau: (deja && deja.niveau) || vieux.niveau || "nice", reserve: false }; delete neuf.horsRoute;
+  etat.selection = etat.selection.filter(s => s.id !== nouveau);
+  const j = etat.selection.findIndex(s => s.id === ancien);
+  etat.selection.splice(j, 1, neuf);
+  etat.selection.push({ ...vieux, day: "ap", reserve: true });
+}
+try { (() => {
+  const zone = document.getElementById("programme-contenu"); let g = null;
+  const versSvg = (svg, cx, cy) => { const m = svg.getScreenCTM(); if (!m) return null; const q = svg.createSVGPoint(); q.x = cx; q.y = cy; return q.matrixTransform(m.inverse()); };
+  const fin = (appliquer) => {
+    if (!g) return; const c = g;
+    g = null; try { c.calque.remove(); c.svg.querySelectorAll(".fantome.cible").forEach(f => f.classList.remove("cible")); c.it.classList.remove("glisse"); } catch (_) {}
+    if (!appliquer || !c.bouge || !c.cible) return;
+    const id = c.cible, nom = parId[id].nom; let msg;
+    if (c.pt) { msg = `${nom} replaces ${parId[c.pt].nom}, which is now on standby in the notebook.`; remplacerLieu(c.k, c.pt, id); }
+    else { const n = v => v === "hotel" ? "the hotel" : v === "gare" ? "the station" : parId[v] ? parId[v].nom : v; msg = `${nom} added between ${n(c.a)} and ${n(c.b)}. Times recalculated.`; insererLieu(c.k, id, c.a, c.b); }
+    etat.duel = null; const sy = scrollY; sauver(); rendreActions(id); if (c.pt) rendreActions(c.pt);
+    itinCalme = c.k; rendreCarnet(); if (!document.body.classList.contains("vue-programme")) rendreProgramme();
+    window.scrollTo(0, sy);
+    const m = document.querySelector(`#programme-contenu .itin[data-itin="${c.k}"] .itin-msg`); if (m) m.textContent = msg;
+  };
+  zone.addEventListener("pointerdown", e => {
+    try {
+      if (e.button > 0) return;
+      const seg = e.target.closest(".seg-prise"), pt = e.target.closest(".pt.glissable"); if (!seg && !pt) return;
+      const svg = e.target.closest("svg"), it = e.target.closest(".itin"); if (!svg || !it) return;
+      const calque = document.createElementNS("http://www.w3.org/2000/svg", "g"); calque.setAttribute("class", "glisse-calque"); svg.appendChild(calque);
+      g = { svg, it, k: it.dataset.itin, calque, x0: e.clientX, y0: e.clientY, bouge: false, cible: null, u: +svg.dataset.u || 1, tactile: e.pointerType !== "mouse",
+        pt: pt ? pt.dataset.ptId : null, px: pt ? +pt.dataset.x : 0, py: pt ? +pt.dataset.y : 0,
+        a: seg ? seg.dataset.segA : null, b: seg ? seg.dataset.segB : null, ax: seg ? +seg.dataset.ax : 0, ay: seg ? +seg.dataset.ay : 0, bx: seg ? +seg.dataset.bx : 0, by: seg ? +seg.dataset.by : 0 };
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault();
+    } catch (_) { g = null; }
+  });
+  zone.addEventListener("pointermove", e => {
+    if (!g) return;
+    try {
+      if (!g.bouge && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < 6) return;
+      g.bouge = true; g.it.classList.add("glisse"); e.preventDefault();
+      const q = versSvg(g.svg, e.clientX, e.clientY); if (!q) return;
+      let best = null, dmin = (g.tactile ? 30 : 22) * g.u;
+      g.svg.querySelectorAll(".fantome").forEach(f => { const d = Math.hypot(+f.dataset.x - q.x, +f.dataset.y - q.y); f.classList.remove("cible"); if (d < dmin) { dmin = d; best = f; } });
+      if (best) best.classList.add("cible");
+      g.cible = best ? best.dataset.fantome : null;
+      const tx = best ? +best.dataset.x : q.x, ty = best ? +best.dataset.y : q.y, u = g.u;
+      g.calque.innerHTML = g.pt
+        ? `<line x1="${g.px}" y1="${g.py}" x2="${tx}" y2="${ty}" stroke="#f3c46b" stroke-width="${2.5 * u}" stroke-dasharray="${6 * u} ${4 * u}"/><circle cx="${tx}" cy="${ty}" r="${13 * u}" fill="rgba(243,196,107,.35)" stroke="#f3c46b" stroke-width="${2.5 * u}"/>`
+        : `<path d="M${g.ax} ${g.ay} L${tx} ${ty} L${g.bx} ${g.by}" fill="none" stroke="#f3c46b" stroke-width="${4 * u}" stroke-linejoin="round" stroke-dasharray="${8 * u} ${5 * u}"/><circle cx="${tx}" cy="${ty}" r="${7 * u}" fill="#f3c46b"/>`;
+    } catch (_) {}
+  });
+  zone.addEventListener("pointerup", e => { try { fin(true); } catch (_) { g = null; } });
+  zone.addEventListener("pointercancel", () => { try { fin(false); } catch (_) { g = null; } });
+  // sur iPhone, empêcher le défilement quand le doigt part d'une ligne ou d'une étape
+  zone.addEventListener("touchstart", e => { try { if (e.target.closest && e.target.closest(".seg-prise, .pt.glissable")) e.preventDefault(); } catch (_) {} }, { passive: false });
+  zone.addEventListener("click", e => { try { const f = e.target.closest && e.target.closest("[data-fantome]"); if (f && !(g && g.bouge)) ouvrirFiche(f.dataset.fantome); } catch (_) {} });
+})(); } catch (err) {}
 function rendreProgramme() {
   const zone = document.getElementById("programme-contenu");
   const prevus = etat.selection.filter(x => x.day !== "ap" && !HEURES_FIXES[x.id]).length;
@@ -2526,7 +2736,7 @@ function rendreProgramme() {
   const mode = modeTrajet() === "taxi" ? "by taxi" : "by metro and on foot";
   const reserve = etat.selection.filter(x => x.day === "ap" && x.reserve);
   zone.innerHTML = duelHtml() + `<p class="prog-intro">Times calculated ${mode}, visit lengths included. Tap a stop to open its page; under each stop, the places from the list a few minutes’ walk away, in case you change your mind on the spot.</p>`
-    + JOURS_SEJOUR.map(k => {
+    + horairesHtml() + vueChoixHtml() + (etat.vueProg === "grille" ? emploiDuTempsHtml() : JOURS_SEJOUR.map(k => {
       const j = JOURNEES[k], p = programme(k);
       return `<section class="prog-jour" aria-labelledby="pj-${k}">
         <header class="prog-tete"><p class="prog-date">${j.titre.split(" ")[0]}<b>${j.titre.split(" ")[1]}</b>${j.titre.split(" ")[2]}</p>
@@ -2536,7 +2746,7 @@ function rendreProgramme() {
         ${itinHtml(k, p)}
         <ol class="prog-etapes">${p.etapes.map(e => {
           if (e.type === "fixe") return `<li class="pe-fixe"><b>${heure(e.debut)}</b><span>${e.txt}</span></li>`;
-          if (e.type === "trajet") { const t = e.tr; return `<li class="pe-trajet">${t ? `<span>${t.apied ? `On foot, ${t.metro} min, free` : `Metro + walk, ${t.metro} min, 2 tickets ${eur(t.metroEur)}`}</span><span>Taxi, ${t.taxiMin} min, ~€${t.taxiEur}</span>` : `<span>Journey to be estimated</span>`}${e.note ? `<em>${e.note}</em>` : ""}</li>`; }
+          if (e.type === "trajet") { const t = e.tr; return `<li class="pe-trajet">${t ? `<span>${t.apied ? `On foot, ${t.metro} min, free` : `Metro + walk, ${t.metro} min, 2 tickets ${eur(t.metroEur)}`}</span><span>Taxi, ${t.taxiMin} min, ~€${t.taxiEur}</span>${marcheUtile(t, e.de, e.vers) ? `<span>Walk, ${duree(t.marche)} (${t.km.toFixed(1)} km)</span>` : ""}` : `<span>Journey to be estimated</span>`}${e.note ? `<em>${e.note}</em>` : ""}</li>`; }
           const l = e.l, ph = photosDe(l)[0];
           return `<li class="pe-lieu" style="--c:${TEINTES_CARTE[l.theme]}">
             <div class="pe-heure"><b>${heure(e.debut)}</b><span>${duree(e.duree)}</span></div>
@@ -2551,7 +2761,7 @@ function rendreProgramme() {
               ${autourHtml(l.id)}
             </article></li>`;
         }).join("")}</ol></section>`;
-    }).join("")
+    }).join(""))
     + (reserve.length ? `<div class="reserve prog-reserve"><p class="reserve-titre">On standby <span>alternatives, if a visit is cut short or you change your mind</span></p><ul>${reserve.map(x => { const l = parId[x.id]; return `<li><button type="button" class="nom-lien" data-fiche="${l.id}">${esc(l.nom)}</button><span class="meta">${esc(l.type)} · ${esc(l.arr)} · ${duree(dureeDe(l.id))}</span><button type="button" class="remettre" data-remettre="${l.id}">Put back in the itinerary</button></li>`; }).join("")}</ul></div>` : "")
     + (etat.selection.some(x => x.day === "ap" && x.horsRoute && !x.reserve) ? `<p class="prog-reste">If on the way, not near the route this time: ${etat.selection.filter(x => x.day === "ap" && x.horsRoute && !x.reserve).map(x => `<a href="#lieu-${x.id}">${esc(parId[x.id].nom)}</a>`).join(", ")}.</p>` : "")
     + (etat.selection.some(x => x.day === "ap" && !x.reserve && !x.horsRoute) ? `<p class="prog-reste">Not organised yet: ${etat.selection.filter(x => x.day === "ap" && !x.reserve && !x.horsRoute).map(x => `<a href="#lieu-${x.id}">${esc(parId[x.id].nom)}</a>`).join(", ")}.</p>` : "")
