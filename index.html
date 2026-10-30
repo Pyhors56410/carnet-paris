@@ -1547,15 +1547,17 @@ const dureeTrajet = t => t ? (modeTrajet() === "taxi" ? t.taxiMin : t.metro) : 2
 function programme(k) {
   const j = JOURNEES[k], items = listeJour(k);
   const etapes = [], alertes = [];
-  let t = j.debut, ici;
+  let t = j.debut, ici, repasPris = 0;
   const aller = (vers, note) => { const tr = trajet(ici, vers); etapes.push({ type: "trajet", tr, note, de: ici, vers, debut: t, duree: dureeTrajet(tr) }); t += dureeTrajet(tr); ici = vers; };
   const visite = l => {
     const fixe = HEURES_FIXES[l.id] && HEURES_FIXES[l.id].jour === k ? HEURES_FIXES[l.id].debut : null;
     if (fixe != null) { if (t > fixe) alertes.push(`You would reach ${l.nom} around ${heure(t)}, after the ${heure(fixe)} session: remove a stop before it.`); else t = fixe; }
     else if (l.theme === "resto") {
       // repas : déjeuner pas avant 12 h, dîner pas avant 19 h 30 (18 h 15 si une séance suit)
+      // un deuxième restaurant dans la journée est toujours le dîner, même si l'on a fini de déjeuner tôt
       const seanceApres = items.some(x => HEURES_FIXES[x.id] && HEURES_FIXES[x.id].jour === k);
-      t = t < H(15) ? Math.max(t, H(12)) : Math.max(t, seanceApres ? H(18, 15) : H(19, 30));
+      t = t < H(15) && !repasPris ? Math.max(t, H(12)) : Math.max(t, seanceApres ? H(18, 15) : H(19, 30));
+      repasPris++;
     }
     const d = dureeDe(l.id);
     etapes.push({ type: "lieu", l, debut: t, fixe: fixe != null, duree: d }); t += d;
