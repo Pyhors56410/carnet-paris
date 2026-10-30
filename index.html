@@ -540,6 +540,13 @@ body.vue-carte #adresses { display: none; }
 .itin .fantome.cible circle { stroke: #f3c46b; }
 .itin .fantome-nom { opacity: 0; pointer-events: none; font-family: var(--f-texte); font-weight: 600; fill: #fff; stroke: rgba(16, 23, 29, .9); paint-order: stroke; transition: opacity .15s; }
 .itin .fantome:hover .fantome-nom, .itin .fantome.cible .fantome-nom { opacity: 1; }
+.itin-carte svg { touch-action: pan-y; cursor: grab; }
+.itin-carte.zoome svg { touch-action: none; }
+.itin-carte.deplace svg { cursor: grabbing; }
+.itin-zoom { position: absolute; top: 10px; left: 10px; z-index: 2; display: flex; flex-direction: column; border: 1px solid rgba(255, 255, 255, .25); border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.itin-zoom button { width: 34px; height: 32px; border: 0; background: rgba(16, 23, 29, .88); color: #fff; font: 600 1.05rem/1 var(--f-texte); cursor: pointer; }
+.itin-zoom button + button { border-top: 1px solid rgba(255, 255, 255, .18); }
+.itin-zoom button:hover { background: rgba(214, 168, 78, .9); color: #17120a; }
 .itin .seg-prise { fill: none; stroke: transparent; pointer-events: stroke; cursor: grab; touch-action: none; }
 .itin .pt.glissable { cursor: grab; touch-action: none; }
 .itin.glisse, .itin.glisse * { cursor: grabbing !important; user-select: none; -webkit-user-select: none; }
@@ -1728,13 +1735,13 @@ function ordonnerJour(k, ids) {
   diners.sort((a, b) => distanceKm(ordre[ordre.length - 1] || "hotel", a) - distanceKm(ordre[ordre.length - 1] || "hotel", b));
   return [...espacerCafes([...ordre, ...diners]), ...fixes];
 }
-/* Jamais un café juste avant un restaurant ; un café juste après un restaurant seulement s'il est à 10 min à pied au plus.
+/* Jamais un café juste avant un restaurant ; un café juste après un restaurant seulement s'il est à 15 min à pied au plus.
    Sinon le café est glissé ailleurs dans la journée, là où il allonge le moins le trajet. */
 function espacerCafes(seq) {
   try {
     const estCafe = id => parId[id].theme === "cafe", estResto = id => parId[id].theme === "resto";
     if (!seq.some(estCafe) || !seq.some(estResto)) return seq;
-    const aPied = (a, b) => distanceKm(a, b) / 4.5 * 60 <= 10;
+    const aPied = (a, b) => distanceKm(a, b) / 4.5 * 60 <= 15;
     const base = seq.filter(id => !estCafe(id));
     seq.filter(estCafe).forEach(c => {
       let best = -1, cout = Infinity;
@@ -1757,7 +1764,21 @@ const CHARGE_MAX = { Relaxed: { lun: 210, mar: 330, mer: 90 }, Balanced: { lun: 
 const chargeMax = k => (CHARGE_MAX[etat.formulaire.rythme] || CHARGE_MAX.Balanced)[k];
 // visites comptées dans la charge : tout sauf les repas (et, le mercredi, le restaurant d'après 11 h)
 const chargeDe = (k, ids) => ids.filter(id => parId[id].theme !== "resto" && !HEURES_FIXES[id]).reduce((s, id) => s + dureeDe(id), 0);
+// vrai si l'ordre respecte la règle café / restaurant (sinon le café ira un autre jour, ou sera proposé en duel)
+function cafesOk(k, ids) {
+  try {
+    if (k === "mer") return true;
+    const s = ids.filter(id => !HEURES_FIXES[id]);
+    for (let i = 0; i < s.length - 1; i++) {
+      const a = parId[s[i]].theme, b = parId[s[i + 1]].theme;
+      if (a === "cafe" && b === "resto") return false;
+      if (a === "resto" && b === "cafe" && distanceKm(s[i], s[i + 1]) / 4.5 * 60 > 15) return false;
+    }
+    return true;
+  } catch (e) { return true; }
+}
 function tient(k, ids) {
+  if (!cafesOk(k, ids)) return false;
   if (chargeDe(k, ids) > chargeMax(k)) return false;
   if (ids.filter(id => parId[id].theme === "resto").length > (k === "mer" ? 1 : 2)) return false;
   const sauve = etat.selection; const essai = ids.map(id => ({ ...sauve.find(s => s.id === id), day: k }));
@@ -2518,6 +2539,7 @@ function autourHtml(id, titre = "À faire autour") {
   return `<div class="autour"><p class="autour-titre">${titre} <span>on foot</span></p><ul>${a.map(x => `<li><a href="#lieu-${x.l.id}"><i style="background:${TEINTES_CARTE[x.l.theme]}"></i><span class="n">${esc(x.l.nom)}</span><span class="d">${x.min} min${x.prevu ? " · already planned" : x.reserve ? " · on standby" : ""}</span></a></li>`).join("")}</ul></div>`;
 }
 /* ---------- Itinéraire animé par jour (SVG, pas de canvas ; isolé : une erreur ici n'affecte rien d'autre) ---------- */
+const ZOOM_ITIN = {}; // cadrage zoomé de chaque carte du jour (viewBox), le temps de la visite
 const MODES_ITIN = { walk: { ico: "🚶", lbl: "on foot", c: "#3d8a5c" }, metro: { ico: "🚇", lbl: "metro + walk", c: "#d6a84e" }, taxi: { ico: "🚕", lbl: "taxi", c: "#4a8fd6" } };
 function itinHtml(k, p) {
   try {
@@ -2541,6 +2563,8 @@ function itinHtml(k, p) {
     if (w / hh > 1.2) hh = w / 1.2; else w = hh * 1.2;
     const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     let vx = Math.max(0, Math.min(W0 - w, cx - w / 2)), vy = Math.max(0, Math.min(H0 - hh, cy - hh / 2));
+    const vb0 = { x: vx, y: vy, w, h: hh }, z = ZOOM_ITIN[k];
+    if (z && z.w < w) { vx = z.x; vy = z.y; hh = hh * z.w / w; w = z.w; } else delete ZOOM_ITIN[k];
     const u = w / 560; // une unité « écran » dans le repère du plan
     // repères : numéros pour les lieux, H pour l'hôtel, M pour la gare
     let n = 0;
@@ -2560,7 +2584,7 @@ function itinHtml(k, p) {
       const qx = mx - dy / L * o, qy = my + dx / L * o;
       return { d: `M${s.a.x.toFixed(1)} ${s.a.y.toFixed(1)} Q${qx.toFixed(1)} ${qy.toFixed(1)} ${s.b.x.toFixed(1)} ${s.b.y.toFixed(1)}`, px: (s.a.x + 2 * qx + s.b.x) / 4, py: (s.a.y + 2 * qy + s.b.y) / 4, L };
     };
-    let svg = `<svg data-u="${u.toFixed(4)}" viewBox="${vx.toFixed(0)} ${vy.toFixed(0)} ${w.toFixed(0)} ${hh.toFixed(0)}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Route map for ${esc(JOURNEES[k].titre)}"><image class="fond" href="carte/paris.jpg" x="0" y="0" width="${W0}" height="${H0}" preserveAspectRatio="none"/>`
+    let svg = `<svg data-u="${u.toFixed(4)}" data-vb0='${JSON.stringify(vb0)}' data-w0="${W0}" data-h0="${H0}" viewBox="${vx.toFixed(0)} ${vy.toFixed(0)} ${w.toFixed(0)} ${hh.toFixed(0)}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Route map for ${esc(JOURNEES[k].titre)}"><image class="fond" href="carte/paris.jpg" x="0" y="0" width="${W0}" height="${H0}" preserveAspectRatio="none"/>`
       + `<rect x="${vx}" y="${vy}" width="${w}" height="${hh}" fill="rgba(16,23,29,.12)"/>`;
     segs.forEach((s, i) => {
       const c = courbe(s), m = MODES_ITIN[s.mode];
@@ -2610,7 +2634,7 @@ function itinHtml(k, p) {
     const km = segs.reduce((s, x) => s + x.km, 0), minT = segs.reduce((s, x) => s + (x.min || 0), 0), nbLieux = n;
     return `<div class="itin" data-itin="${k}">
       <div class="itin-tete"><p><b>Route of the day</b> · ${nbLieux} stop${nbLieux !== 1 ? "s" : ""} · about ${km.toFixed(1)} km · ${duree(minT)} of travel</p><button type="button" class="rejouer" data-rejouer="${k}">▶ Replay the route</button><p class="itin-astuce">Faded dots are other places nearby. Drag a line of the route onto one to add it there, or drag a numbered stop onto one to swap them.</p><p class="itin-msg" role="status"></p></div>
-      <div class="itin-corps"><div class="itin-carte">${svg}</div><ol class="itin-liste">${liste}</ol></div></div>`;
+      <div class="itin-corps"><div class="itin-carte${ZOOM_ITIN[k] ? " zoome" : ""}">${svg}<div class="itin-zoom" role="group" aria-label="Zoom the map"><button type="button" data-izoom="in" aria-label="Zoom in">+</button><button type="button" data-izoom="out" aria-label="Zoom out">−</button><button type="button" data-izoom="reset" aria-label="Back to the whole route">⌂</button></div></div><ol class="itin-liste">${liste}</ol></div></div>`;
   } catch (err) { try { console.warn("Itinéraire :", err); } catch (_) {} return ""; }
 }
 function jouerItin(el) {
@@ -2749,6 +2773,81 @@ try { (() => {
   });
   zone.addEventListener("pointerup", e => { try { fin(true); } catch (_) { g = null; } });
   zone.addEventListener("pointercancel", () => { try { fin(false); } catch (_) { g = null; } });
+  /* ---------- Zoom des cartes du jour : molette, boutons + − ⌂, pincer à deux doigts ; glisser le fond pour se déplacer ---------- */
+  const vbDe = svg => { const [x, y, w, hh] = svg.getAttribute("viewBox").split(/\s+/).map(Number); return { x, y, w, h: hh }; };
+  const borner = (svg, v) => { const W0 = +svg.dataset.w0, H0 = +svg.dataset.h0; v.x = Math.max(0, Math.min(W0 - v.w, v.x)); v.y = Math.max(0, Math.min(H0 - v.h, v.y)); return v; };
+  const poser = (svg, v) => svg.setAttribute("viewBox", `${v.x.toFixed(1)} ${v.y.toFixed(1)} ${v.w.toFixed(1)} ${v.h.toFixed(1)}`);
+  function zoomCalc(svg, f, cx, cy) {
+    const b = JSON.parse(svg.dataset.vb0), v = vbDe(svg);
+    const w = Math.max(b.w / 5, Math.min(b.w, v.w / f)), hh = w * b.h / b.w, g = v.w / w;
+    return borner(svg, { x: cx - (cx - v.x) / g, y: cy - (cy - v.y) / g, w, h: hh });
+  }
+  function rafraichirItin(k) {
+    const el = zone.querySelector(`.itin[data-itin="${k}"]`); if (!el) return;
+    const t = document.createElement("div"); t.innerHTML = itinHtml(k, programme(k));
+    const neuf = t.querySelector(".itin-carte"), vieux = el.querySelector(".itin-carte"); if (neuf && vieux) vieux.replaceWith(neuf);
+  }
+  function memoriser(svg) { const k = svg.closest(".itin").dataset.itin, b = JSON.parse(svg.dataset.vb0), v = vbDe(svg); if (v.w >= b.w - 0.5) delete ZOOM_ITIN[k]; else ZOOM_ITIN[k] = v; return k; }
+  const centreSvg = (svg, cx, cy) => versSvg(svg, cx, cy);
+  zone.addEventListener("click", e => {
+    try {
+      const b = e.target.closest("[data-izoom]"); if (!b) return;
+      const svg = b.closest(".itin-carte").querySelector("svg"), v = vbDe(svg), k = svg.closest(".itin").dataset.itin;
+      if (b.dataset.izoom === "reset") delete ZOOM_ITIN[k];
+      else { const n = zoomCalc(svg, b.dataset.izoom === "in" ? 1.6 : 1 / 1.6, v.x + v.w / 2, v.y + v.h / 2); poser(svg, n); memoriser(svg); }
+      rafraichirItin(k);
+    } catch (_) {}
+  });
+  let rouletteRaf = null;
+  zone.addEventListener("wheel", e => {
+    try {
+      const svg = e.target.closest && e.target.closest(".itin-carte svg"); if (!svg) return;
+      e.preventDefault();
+      const q = centreSvg(svg, e.clientX, e.clientY); if (!q) return;
+      poser(svg, zoomCalc(svg, Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0018)), q.x, q.y));
+      const k = memoriser(svg);
+      cancelAnimationFrame(rouletteRaf); rouletteRaf = requestAnimationFrame(() => { rouletteRaf = setTimeout(() => rafraichirItin(k), 120); });
+    } catch (_) {}
+  }, { passive: false });
+  // déplacer le plan : souris toujours ; au doigt seulement une fois zoomé (sinon le doigt fait défiler la page)
+  let pan = null;
+  zone.addEventListener("pointerdown", e => {
+    try {
+      if (g || e.button > 0) return;
+      const svg = e.target.closest && e.target.closest(".itin-carte svg"); if (!svg) return;
+      if (e.target.closest(".seg-prise, .pt.glissable, .fantome")) return;
+      if (e.pointerType !== "mouse" && !svg.closest(".itin-carte").classList.contains("zoome")) return;
+      pan = { svg, x: e.clientX, y: e.clientY, v: vbDe(svg), bouge: false };
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    } catch (_) { pan = null; }
+  });
+  zone.addEventListener("pointermove", e => {
+    if (!pan) return;
+    try {
+      const dx = e.clientX - pan.x, dy = e.clientY - pan.y; if (!pan.bouge && Math.hypot(dx, dy) < 4) return;
+      pan.bouge = true; pan.svg.closest(".itin-carte").classList.add("deplace");
+      const r = pan.svg.getBoundingClientRect(), sc = Math.max(r.width / pan.v.w, r.height / pan.v.h);
+      poser(pan.svg, borner(pan.svg, { ...pan.v, x: pan.v.x - dx / sc, y: pan.v.y - dy / sc }));
+    } catch (_) {}
+  });
+  const finPan = () => { if (!pan) return; const p = pan; pan = null; try { p.svg.closest(".itin-carte").classList.remove("deplace"); if (p.bouge) rafraichirItin(memoriser(p.svg)); } catch (_) {} };
+  zone.addEventListener("pointerup", finPan); zone.addEventListener("pointercancel", finPan);
+  // pincer à deux doigts (iPhone) : zoom autour du milieu des doigts
+  let pince = null;
+  const ecart = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  zone.addEventListener("touchstart", e => {
+    try {
+      const svg = e.target.closest && e.target.closest(".itin-carte svg"); if (!svg || e.touches.length !== 2) return;
+      e.preventDefault(); g = null; pan = null;
+      pince = { svg, d0: ecart(e.touches), v0: vbDe(svg), c: centreSvg(svg, (e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2) };
+    } catch (_) { pince = null; }
+  }, { passive: false });
+  zone.addEventListener("touchmove", e => {
+    if (!pince || e.touches.length !== 2) return;
+    try { e.preventDefault(); poser(pince.svg, pince.v0); poser(pince.svg, zoomCalc(pince.svg, ecart(e.touches) / pince.d0, pince.c.x, pince.c.y)); } catch (_) {}
+  }, { passive: false });
+  zone.addEventListener("touchend", e => { if (!pince || e.touches.length >= 2) return; const p = pince; pince = null; try { rafraichirItin(memoriser(p.svg)); } catch (_) {} });
+  ["gesturestart", "gesturechange"].forEach(t => zone.addEventListener(t, e => { if (e.target.closest && e.target.closest(".itin-carte")) e.preventDefault(); }, { passive: false }));
   // sur iPhone, empêcher le défilement quand le doigt part d'une ligne ou d'une étape
   zone.addEventListener("touchstart", e => { try { if (e.target.closest && e.target.closest(".seg-prise, .pt.glissable")) e.preventDefault(); } catch (_) {} }, { passive: false });
   zone.addEventListener("click", e => { try { const f = e.target.closest && e.target.closest("[data-fantome]"); if (f && !(g && g.bouge)) ouvrirFiche(f.dataset.fantome); } catch (_) {} });
