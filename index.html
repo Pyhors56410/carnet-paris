@@ -838,7 +838,7 @@ footer { background: rgba(8, 13, 20, .92); }
   </div>
   <div class="wrap app-transfert">
     <p><strong>Notebook on another device</strong> · Your choices and expenses are saved on this device only. To copy them to your iPhone (or back to the computer), send yourself this link and open it on the other device.</p>
-    <p><button type="button" class="btn" id="app-lien">Send my notebook</button> <span id="app-lien-statut" role="status"></span></p>
+    <p><button type="button" class="btn" id="app-lien">Send my notebook</button> <button type="button" class="btn" id="app-recevoir">Paste a notebook link</button> <span id="app-lien-statut" role="status"></span></p>
     <p id="app-horsligne" role="status">Offline mode: preparing…</p>
   </div>
   <style>
@@ -861,6 +861,14 @@ footer { background: rgba(8, 13, 20, .92); }
       if (navigator.share) navigator.share({ title: "My Paris notebook", url: url }).catch(function () {});
       else if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { statut.textContent = "Link copied."; });
       else prompt("Copy this link:", url);
+    });
+    // Sur iPhone, un lien ouvert depuis Messages ou Mail part dans Safari et non dans l'app : on le colle ici.
+    document.getElementById("app-recevoir").addEventListener("click", function () {
+      var lien = prompt("Paste the notebook link you sent yourself:");
+      var m = lien && /#carnet=([\w-]+)/.exec(lien.trim());
+      if (!m) { if (lien) statut.textContent = "This is not a notebook link."; return; }
+      location.replace(location.pathname + "#carnet=" + m[1]);
+      location.reload();
     });
     var info = document.getElementById("app-horsligne");
     if (!("serviceWorker" in navigator)) { info.textContent = "Offline mode is not available in this browser."; return; }
