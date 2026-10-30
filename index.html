@@ -1726,7 +1726,30 @@ function ordonnerJour(k, ids) {
   const ordre = [...suite.slice(0, pos), ...dejeuner, ...suite.slice(pos)];
   // le dîner le plus proche de la dernière étape
   diners.sort((a, b) => distanceKm(ordre[ordre.length - 1] || "hotel", a) - distanceKm(ordre[ordre.length - 1] || "hotel", b));
-  return [...ordre, ...diners, ...fixes];
+  return [...espacerCafes([...ordre, ...diners]), ...fixes];
+}
+/* Jamais un café juste avant un restaurant ; un café juste après un restaurant seulement s'il est à 10 min à pied au plus.
+   Sinon le café est glissé ailleurs dans la journée, là où il allonge le moins le trajet. */
+function espacerCafes(seq) {
+  try {
+    const estCafe = id => parId[id].theme === "cafe", estResto = id => parId[id].theme === "resto";
+    if (!seq.some(estCafe) || !seq.some(estResto)) return seq;
+    const aPied = (a, b) => distanceKm(a, b) / 4.5 * 60 <= 10;
+    const base = seq.filter(id => !estCafe(id));
+    seq.filter(estCafe).forEach(c => {
+      let best = -1, cout = Infinity;
+      for (let i = 0; i <= base.length; i++) {
+        const av = base[i - 1], ap = base[i];
+        if (ap && estResto(ap)) continue;
+        if (av && estResto(av) && !aPied(av, c)) continue;
+        const a = av || "hotel", b = ap || "hotel";
+        const plus = distanceKm(a, c) + distanceKm(c, b) - distanceKm(a, b) + Math.abs(i - seq.indexOf(c)) * 0.3;
+        if (plus < cout) { cout = plus; best = i; }
+      }
+      base.splice(best < 0 ? Math.min(seq.indexOf(c), base.length) : best, 0, c);
+    });
+    return base;
+  } catch (e) { return seq; }
 }
 /* Charge maximale de visites par jour selon le rythme (les jours de décembre sont courts) :
    on ne cherche pas à tout caser ; au-delà, on demande de choisir entre deux adresses. */
