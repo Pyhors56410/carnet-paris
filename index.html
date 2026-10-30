@@ -419,6 +419,12 @@ body.vue-carte #adresses { display: none; }
 .jours-possibles .lbl { font-size: .74rem; color: var(--muted); }
 .jours-possibles .jours button { padding: 5px 9px; font-size: .8rem; color: var(--encre); }
 .jours-possibles .jours button[aria-pressed="true"] { color: #fff; }
+.niveaux button[data-niv="must"][aria-pressed="true"] { background: var(--alerte); }
+.niveaux button[data-niv="route"][aria-pressed="true"] { background: var(--muted); }
+.badge-niv { display: inline-block; margin-left: 6px; font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; vertical-align: middle; }
+.badge-niv.must { color: var(--alerte); }
+.badge-niv.route { color: var(--muted); }
+.hors-route .reserve-titre { color: var(--muted); }
 .choix-jours { grid-column: 1 / -1; margin-top: 4px; }
 .fixe-jour { font-size: .82rem; color: var(--email); font-weight: 500; }
 .a-organiser { background: var(--papier); margin: 0 -12px; padding: 12px; border-radius: var(--rayon); }
@@ -1344,7 +1350,28 @@ function rendreZone(zone, id) {
     ? `<button type="button" class="btn" data-ajouter="${id}" aria-label="Add ${nom} to the notebook">Add to notebook</button>`
     : HEURES_FIXES[id] ? `<span class="fixe-jour">Booked: ${JOURNEES[HEURES_FIXES[id].jour].titre} at ${heure(HEURES_FIXES[id].debut)}</span>
        <button type="button" class="lien-retirer" data-retirer="${id}" aria-label="Remove ${nom} from the notebook">Remove</button>`
-    : `${puceJours(id, nom)}<button type="button" class="lien-retirer" data-retirer="${id}" aria-label="Remove ${nom} from the notebook">Remove</button>`;
+    : `${puceNiveau(id, nom)}${puceJours(id, nom)}<button type="button" class="lien-retirer" data-retirer="${id}" aria-label="Remove ${nom} from the notebook">Remove</button>`;
+}
+
+/* Trois niveaux d'envie : indispensable, à faire si possible, seulement si c'est sur le chemin.
+   Les carnets déjà remplis passent en « Nice to have » ; la séance réservée est indispensable. */
+const NIVEAUX = [["must", "Must-do"], ["nice", "Nice to have"], ["route", "If on the way"]];
+const RANG_NIVEAU = { must: 2, nice: 1, route: 0 };
+const niveauDe = x => !x ? "nice" : HEURES_FIXES[x.id] ? "must" : (RANG_NIVEAU[x.niveau] != null ? x.niveau : "nice");
+const rangDe = x => RANG_NIVEAU[niveauDe(x)];
+const nomNiveau = n => (NIVEAUX.find(v => v[0] === n) || NIVEAUX[1])[1];
+function puceNiveau(id, nom) {
+  try {
+    const n = niveauDe(etat.selection.find(s => s.id === id));
+    return `<span class="jours-possibles"><span class="lbl">Priority</span><span class="jours niveaux" role="group" aria-label="Priority for ${nom}">${NIVEAUX.map(([k, v]) => `<button type="button" data-niveau="${id}" data-niv="${k}" aria-pressed="${n === k}">${v}</button>`).join("")}</span></span>`;
+  } catch (e) { return ""; }
+}
+const badgeNiveau = x => { try { const n = niveauDe(x); return n === "nice" || HEURES_FIXES[x.id] ? "" : `<span class="badge-niv ${n}">${nomNiveau(n)}</span>`; } catch (e) { return ""; } };
+function changerNiveau(id, n) {
+  const x = etat.selection.find(s => s.id === id); if (!x || HEURES_FIXES[id] || RANG_NIVEAU[n] == null) return;
+  x.niveau = n; delete x.horsRoute;
+  sauver(); rendreActions(id); rendreCarnet();
+  const msg = document.getElementById("msg-organiser"); if (msg) msg.textContent = "Priority changed: organise again to update the itinerary.";
 }
 
 function puceJours(id, nom) {
@@ -1495,13 +1522,15 @@ function rendreCarnet() {
     const items = listeJour(k);
     if (k === "ap") {
       const reserve = etat.selection.filter(x => x.day === "ap" && x.reserve).map(x => parId[x.id]);
-      items.splice(0, items.length, ...items.filter(l => !reserve.includes(l)));
+      const horsRoute = etat.selection.filter(x => x.day === "ap" && !x.reserve && x.horsRoute).map(x => parId[x.id]);
+      items.splice(0, items.length, ...items.filter(l => !reserve.includes(l) && !horsRoute.includes(l)));
       return `<div class="jour a-organiser">${duelHtml()}<div class="jour-tete"><h3>To organise<small>Tick the possible days, then organise</small></h3><span>${items.length} place${items.length !== 1 ? "s" : ""}</span></div>
-      ${items.length ? `<ul class="items">${items.map(l => `<li><span class="nom">${esc(l.nom)}</span><span class="meta">${esc(l.arr)} · M ${esc(l.metro)}</span>${ctrlLieu(l, k)}<span class="choix-jours">${dureeHtml(l)}${puceJours(l.id, esc(l.nom))}</span></li>`).join("")}</ul>`
+      ${items.length ? `<ul class="items">${items.map(l => `<li><span class="nom">${esc(l.nom)}</span><span class="meta">${esc(l.arr)} · M ${esc(l.metro)}</span>${ctrlLieu(l, k)}<span class="choix-jours">${dureeHtml(l)}${puceNiveau(l.id, esc(l.nom))}${puceJours(l.id, esc(l.nom))}</span></li>`).join("")}</ul>`
         : `<p class="vide">Add places from the list or the map: they will appear here.</p>`}
       <button type="button" class="btn plein organiser" id="organiser"${etat.selection.some(x => !HEURES_FIXES[x.id]) ? "" : " disabled"}>Organise my itinerary</button>
       <p class="msg-organiser" id="msg-organiser" role="status">${items.length && etat.selection.some(x => x.day !== "ap" && !HEURES_FIXES[x.id]) && !etat.duel ? "New places are waiting: organise again to include them." : ""}</p>
-      ${reserve.length ? `<div class="reserve"><p class="reserve-titre">On standby <span>alternatives if you have time</span></p><ul>${reserve.map(l => `<li><button type="button" class="nom-lien" data-fiche="${l.id}">${esc(l.nom)}</button><span class="meta">${esc(l.arr)} · ${duree(dureeDe(l.id))}</span><button type="button" class="remettre" data-remettre="${l.id}">Put back in the itinerary</button></li>`).join("")}</ul></div>` : ""}</div>`; }
+      ${reserve.length ? `<div class="reserve"><p class="reserve-titre">On standby <span>alternatives if you have time</span></p><ul>${reserve.map(l => `<li><button type="button" class="nom-lien" data-fiche="${l.id}">${esc(l.nom)}</button><span class="meta">${esc(l.arr)} · ${duree(dureeDe(l.id))}</span><button type="button" class="remettre" data-remettre="${l.id}">Put back in the itinerary</button></li>`).join("")}</ul></div>` : ""}
+      ${horsRoute.length ? `<div class="reserve hors-route"><p class="reserve-titre">If on the way <span>not near the route this time</span></p><ul>${horsRoute.map(l => `<li><button type="button" class="nom-lien" data-fiche="${l.id}">${esc(l.nom)}</button><span class="meta">${esc(l.arr)} · ${duree(dureeDe(l.id))}</span><button type="button" class="remettre" data-niveau="${l.id}" data-niv="nice">Make it Nice to have</button></li>`).join("")}</ul></div>` : ""}</div>`; }
     const j = JOURNEES[k], p = programme(k), trop = p.alertes.length && p.fin > j.fin;
     const pct = Math.min(100, Math.round(p.remplissage * 100));
     return `<div class="jour">
@@ -1510,7 +1539,7 @@ function rendreCarnet() {
       ${p.alertes.map(a => `<p class="msg-jour">${esc(a)}</p>`).join("")}
       <ol class="programme">${p.etapes.map(e => e.type === "trajet" ? trajetHtml(e)
         : e.type === "fixe" ? `<li class="etape-fixe"><b>${heure(e.debut)}</b><span>${e.txt}</span></li>`
-        : `<li class="etape-lieu"><b>${heure(e.debut)}</b><span class="nom">${esc(e.l.nom)}${e.fixe ? ` <span class="heure">session booked</span>` : ""}</span>
+        : `<li class="etape-lieu"><b>${heure(e.debut)}</b><span class="nom">${esc(e.l.nom)}${e.fixe ? ` <span class="heure">session booked</span>` : ""}${badgeNiveau(etat.selection.find(s => s.id === e.l.id))}</span>
             <span class="meta">${esc(e.l.arr)} · M ${esc(e.l.metro)}</span>${ctrlLieu(e.l, k)}<span class="ligne-duree">${dureeHtml(e.l)}</span></li>`).join("")}</ol>
       ${items.length ? "" : `<p class="vide">${k === "mer" ? "The morning until 11 am, then a restaurant or café on the way to Montparnasse." : "No places yet."}</p>`}
     </div>`;
@@ -1558,6 +1587,7 @@ document.addEventListener("click", e => {
   else if (b.dataset.remettre) remettre(b.dataset.remettre);
   else if (b.dataset.passerDuel) { const x = etat.selection.find(s => s.id === etat.duel.a); if (x) x.reserve = true; organiser(); }
   else if (b.dataset.basculer) basculerJour(b.dataset.basculer, b.dataset.jour);
+  else if (b.dataset.niveau) changerNiveau(b.dataset.niveau, b.dataset.niv);
   else if (b.id === "organiser") organiser();
   else if (b.dataset.mode) { etat.mode = b.dataset.mode; sauver(); rendreCarnet(); }
 });
@@ -1576,7 +1606,7 @@ const joursPossibles = x => (x.jours && x.jours.length ? x.jours : JOURS_SEJOUR)
 function basculerJour(id, k) {
   const x = etat.selection.find(s => s.id === id); if (!x || HEURES_FIXES[id]) return;
   const j = new Set(x.jours || []); j.has(k) ? j.delete(k) : j.add(k);
-  x.jours = JOURS_SEJOUR.filter(d => j.has(d));
+  x.jours = JOURS_SEJOUR.filter(d => j.has(d)); delete x.horsRoute;
   if (x.day !== "ap" && x.jours.length && !x.jours.includes(x.day)) x.day = "ap";
   sauver(); rendreActions(id); rendreCarnet();
 }
@@ -1622,12 +1652,13 @@ function tient(k, ids) {
   return p.fin <= JOURNEES[k].fin && !p.alertes.some(a => /after|too|more than 9|closed/i.test(a));
 }
 const prioDe = x => x.prio || 0;
+const DETOUR_MAX_KM = 1.2; // environ un quart d'heure de marche en plus
 function organiser() {
   const sel = etat.selection;
   const jours = { lun: [], mar: [], mer: [] }, nonPlaces = [];
   sel.filter(x => HEURES_FIXES[x.id]).forEach(x => jours[HEURES_FIXES[x.id].jour].push(x.id));
-  const aPlacer = sel.filter(x => !HEURES_FIXES[x.id] && !x.reserve)
-    .sort((a, b) => prioDe(b) - prioDe(a) || joursPossibles(a).length - joursPossibles(b).length || dureeDe(b.id) - dureeDe(a.id));
+  const aPlacer = sel.filter(x => !HEURES_FIXES[x.id] && !x.reserve && niveauDe(x) !== "route")
+    .sort((a, b) => rangDe(b) - rangDe(a) || prioDe(b) - prioDe(a) || joursPossibles(a).length - joursPossibles(b).length || dureeDe(b.id) - dureeDe(a.id));
   const centre = ids => { const pts = ids.map(point).filter(Boolean); return pts.length ? pts : [point("hotel")]; };
   aPlacer.forEach(x => {
     const options = joursPossibles(x).map(k => {
@@ -1638,19 +1669,36 @@ function organiser() {
     const choix = options.find(o => tient(o.k, ordonnerJour(o.k, [...jours[o.k], x.id])));
     if (choix) jours[choix.k].push(x.id); else nonPlaces.push(x.id);
   });
+  // « If on the way » : seulement là où le détour sur le trajet du jour reste court
+  const horsRoute = [];
+  sel.filter(x => !HEURES_FIXES[x.id] && !x.reserve && niveauDe(x) === "route").sort((a, b) => prioDe(b) - prioDe(a)).forEach(x => {
+    let meilleur = null;
+    try {
+      joursPossibles(x).forEach(k => {
+        const ordre = ordonnerJour(k, jours[k]), pts = ["hotel", ...ordre, "hotel"];
+        let detour = Infinity;
+        for (let i = 0; i < pts.length - 1; i++) detour = Math.min(detour, distanceKm(pts[i], x.id) + distanceKm(x.id, pts[i + 1]) - distanceKm(pts[i], pts[i + 1]));
+        if (detour <= DETOUR_MAX_KM && (!meilleur || detour < meilleur.detour) && tient(k, ordonnerJour(k, [...jours[k], x.id]))) meilleur = { k, detour };
+      });
+    } catch (e) { meilleur = null; }
+    if (meilleur) jours[meilleur.k].push(x.id); else horsRoute.push(x.id);
+  });
   const nouvelle = [];
   JOURS_SEJOUR.forEach(k => ordonnerJour(k, jours[k]).forEach(id => nouvelle.push({ ...sel.find(s => s.id === id), day: k })));
-  sel.filter(x => !HEURES_FIXES[x.id] && (x.reserve || nonPlaces.includes(x.id))).forEach(x => nouvelle.push({ ...x, day: "ap" }));
+  JOURS_SEJOUR.forEach(k => jours[k].forEach(id => { const y = nouvelle.find(s => s.id === id); if (y) delete y.horsRoute; }));
+  sel.filter(x => !HEURES_FIXES[x.id] && (x.reserve || nonPlaces.includes(x.id))).forEach(x => { const y = { ...x, day: "ap" }; delete y.horsRoute; nouvelle.push(y); });
+  sel.filter(x => horsRoute.includes(x.id)).forEach(x => nouvelle.push({ ...x, day: "ap", horsRoute: true }));
   etat.selection = nouvelle;
   // un duel : l'adresse qui ne tient pas, contre la moins prioritaire déjà placée sur un de ses jours
   etat.duel = null;
   // on ne propose que des duels utiles : retirer l'autre adresse doit vraiment faire de la place
   for (const a of nonPlaces) {
     const jp = joursPossibles(nouvelle.find(s => s.id === a));
-    const pool = nouvelle.filter(s => jp.includes(s.day) && !HEURES_FIXES[s.id])
+    const ra = rangDe(nouvelle.find(s => s.id === a));
+    const pool = nouvelle.filter(s => jp.includes(s.day) && !HEURES_FIXES[s.id] && rangDe(s) <= ra)
       .filter(s => tient(s.day, ordonnerJour(s.day, [...jours[s.day].filter(id => id !== s.id), a])))
       .sort((p, q) => ((parId[q.id].theme === "resto") === (parId[a].theme === "resto")) - ((parId[p.id].theme === "resto") === (parId[a].theme === "resto"))
-        || prioDe(p) - prioDe(q) || Math.abs(dureeDe(p.id) - dureeDe(a)) - Math.abs(dureeDe(q.id) - dureeDe(a)));
+        || rangDe(p) - rangDe(q) || prioDe(p) - prioDe(q) || Math.abs(dureeDe(p.id) - dureeDe(a)) - Math.abs(dureeDe(q.id) - dureeDe(a)));
     if (pool[0]) { etat.duel = { a, b: pool[0].id, jour: pool[0].day }; break; }
   }
   sauver(); LIEUX.forEach(l => rendreActions(l.id)); rendreCarnet();
@@ -1719,12 +1767,13 @@ function dateFr(iso) { if (!iso) return "not specified"; const [y, m, d] = iso.s
 function listeJour(k) { return etat.selection.filter(x => x.day === k).map(x => parId[x.id]); }
 function recapitulatif() {
   const f = lireFormulaire();
-  const ligne = l => `- ${l.nom} (${l.arr}, metro ${l.metro}) · ${duree(dureeDe(l.id))}`;
+  const niv = id => { try { return ` [${nomNiveau(niveauDe(etat.selection.find(s => s.id === id)))}]`; } catch (e) { return ""; } };
+  const ligne = l => `- ${l.nom}${niv(l.id)} (${l.arr}, metro ${l.metro}) · ${duree(dureeDe(l.id))}`;
   const tr = t => !t ? "journey to be estimated" : `${t.apied ? `on foot ${t.metro} min` : `metro + walk ${t.metro} min`} or taxi ${t.taxiMin} min (~€${t.taxiEur})`;
   const bloc = (k, titre) => {
     if (k === "ap") { const it = etat.selection.filter(x => x.day === "ap"); return `${titre}\n${it.length ? it.map(x => `${ligne(parId[x.id])} · possible days: ${(x.jours && x.jours.length ? x.jours.map(d => JOURS.find(j => j[0] === d)[1]).join(", ") : "any")}`).join("\n") : "- (nothing yet)"}`; }
     const p = programme(k);
-    return `${titre}\n` + p.etapes.map(e => e.type === "trajet" ? `     ↓ ${tr(e.tr)}${e.note ? ` (${e.note})` : ""}` : e.type === "fixe" ? `${heure(e.debut)}  ${e.txt}` : `${heure(e.debut)}  ${e.l.nom} (${e.l.arr}, metro ${e.l.metro}) · ${duree(e.duree)}${e.duree !== e.l.duree ? " (time adjusted)" : ""}`).join("\n") + (p.alertes.length ? `\n  ! ${p.alertes.join("\n  ! ")}` : "");
+    return `${titre}\n` + p.etapes.map(e => e.type === "trajet" ? `     ↓ ${tr(e.tr)}${e.note ? ` (${e.note})` : ""}` : e.type === "fixe" ? `${heure(e.debut)}  ${e.txt}` : `${heure(e.debut)}  ${e.l.nom}${niv(e.l.id)} (${e.l.arr}, metro ${e.l.metro}) · ${duree(e.duree)}${e.duree !== e.l.duree ? " (time adjusted)" : ""}`).join("\n") + (p.alertes.length ? `\n  ! ${p.alertes.join("\n  ! ")}` : "");
   };
   return [
     `PARIS NOTEBOOK · Monday 14 to Wednesday 16 December 2026`,
@@ -2493,7 +2542,7 @@ function rendreProgramme() {
               <button type="button" class="pe-photo" data-fiche="${l.id}" aria-label="See the page: ${esc(l.nom)}">${ph ? `<img src="${esc(ph.src)}" alt="" loading="lazy">` : `<span>${esc(l.nom)}</span>`}</button>
               <div class="pe-corps">
                 <p class="kicker">${esc(l.type)} · ${esc(l.quartier)} · ${esc(l.arr)}</p>
-                <h4><button type="button" data-fiche="${l.id}">${esc(l.nom)}</button>${e.fixe ? ` <span class="pe-badge">session booked</span>` : ""}</h4>
+                <h4><button type="button" data-fiche="${l.id}">${esc(l.nom)}</button>${e.fixe ? ` <span class="pe-badge">session booked</span>` : ""}${badgeNiveau(etat.selection.find(s => s.id === l.id))}</h4>
                 <p class="pe-desc">${esc(l.desc)}</p>
                 <p class="pe-pratique"><span class="metro-m" aria-hidden="true">M</span> ${esc(l.metro)} · ${esc(l.adresse)}${l.remarque ? `<br>${esc(l.remarque)}` : ""}</p>
               </div>
@@ -2502,7 +2551,8 @@ function rendreProgramme() {
         }).join("")}</ol></section>`;
     }).join("")
     + (reserve.length ? `<div class="reserve prog-reserve"><p class="reserve-titre">On standby <span>alternatives, if a visit is cut short or you change your mind</span></p><ul>${reserve.map(x => { const l = parId[x.id]; return `<li><button type="button" class="nom-lien" data-fiche="${l.id}">${esc(l.nom)}</button><span class="meta">${esc(l.type)} · ${esc(l.arr)} · ${duree(dureeDe(l.id))}</span><button type="button" class="remettre" data-remettre="${l.id}">Put back in the itinerary</button></li>`; }).join("")}</ul></div>` : "")
-    + (etat.selection.some(x => x.day === "ap" && !x.reserve) ? `<p class="prog-reste">Not organised yet: ${etat.selection.filter(x => x.day === "ap" && !x.reserve).map(x => `<a href="#lieu-${x.id}">${esc(parId[x.id].nom)}</a>`).join(", ")}.</p>` : "")
+    + (etat.selection.some(x => x.day === "ap" && x.horsRoute && !x.reserve) ? `<p class="prog-reste">If on the way, not near the route this time: ${etat.selection.filter(x => x.day === "ap" && x.horsRoute && !x.reserve).map(x => `<a href="#lieu-${x.id}">${esc(parId[x.id].nom)}</a>`).join(", ")}.</p>` : "")
+    + (etat.selection.some(x => x.day === "ap" && !x.reserve && !x.horsRoute) ? `<p class="prog-reste">Not organised yet: ${etat.selection.filter(x => x.day === "ap" && !x.reserve && !x.horsRoute).map(x => `<a href="#lieu-${x.id}">${esc(parId[x.id].nom)}</a>`).join(", ")}.</p>` : "")
     + `<p class="note-trajets">Journeys estimated from distance (metro: Métro-Train-RER ticket at ${eur(TARIFS.metro)} per person, 2026 fare; taxi on the meter, to be checked). Closing days and opening hours: check before booking.</p>`;
   activerItin();
 }
