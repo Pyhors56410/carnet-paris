@@ -422,6 +422,8 @@ body.vue-carte #adresses { display: none; }
 .niveaux button[data-niv="must"][aria-pressed="true"] { background: var(--alerte); }
 .niveaux button[data-niv="route"][aria-pressed="true"] { background: var(--muted); }
 .badge-niv { display: inline-block; margin-left: 6px; font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; vertical-align: middle; }
+.programme .niveaux button, .items .niveaux button { padding: 4px 7px; font-size: .74rem; white-space: nowrap; }
+.ajout-niveaux .lbl { color: var(--encre); font-weight: 600; }
 .badge-niv.must { color: var(--alerte); }
 .badge-niv.route { color: var(--muted); }
 .hors-route .reserve-titre { color: var(--muted); }
@@ -1347,7 +1349,7 @@ function rendreZone(zone, id) {
   const jour = jourDe(id);
   const carteEl = zone.closest(".lieu"); if (carteEl) carteEl.classList.toggle("choisi", !!jour);
   zone.innerHTML = !jour
-    ? `<button type="button" class="btn" data-ajouter="${id}" aria-label="Add ${nom} to the notebook">Add to notebook</button>`
+    ? `<span class="jours-possibles ajout-niveaux"><span class="lbl">Add to notebook as</span><span class="jours niveaux" role="group" aria-label="Add ${nom} to the notebook">${NIVEAUX.map(([k, v]) => `<button type="button" data-ajouter="${id}" data-niv="${k}" aria-label="Add ${nom} to the notebook: ${v}">${v}</button>`).join("")}</span></span>`
     : HEURES_FIXES[id] ? `<span class="fixe-jour">Booked: ${JOURNEES[HEURES_FIXES[id].jour].titre} at ${heure(HEURES_FIXES[id].debut)}</span>
        <button type="button" class="lien-retirer" data-retirer="${id}" aria-label="Remove ${nom} from the notebook">Remove</button>`
     : `${puceNiveau(id, nom)}${puceJours(id, nom)}<button type="button" class="lien-retirer" data-retirer="${id}" aria-label="Remove ${nom} from the notebook">Remove</button>`;
@@ -1540,7 +1542,7 @@ function rendreCarnet() {
       <ol class="programme">${p.etapes.map(e => e.type === "trajet" ? trajetHtml(e)
         : e.type === "fixe" ? `<li class="etape-fixe"><b>${heure(e.debut)}</b><span>${e.txt}</span></li>`
         : `<li class="etape-lieu"><b>${heure(e.debut)}</b><span class="nom">${esc(e.l.nom)}${e.fixe ? ` <span class="heure">session booked</span>` : ""}${badgeNiveau(etat.selection.find(s => s.id === e.l.id))}</span>
-            <span class="meta">${esc(e.l.arr)} · M ${esc(e.l.metro)}</span>${ctrlLieu(e.l, k)}<span class="ligne-duree">${dureeHtml(e.l)}</span></li>`).join("")}</ol>
+            <span class="meta">${esc(e.l.arr)} · M ${esc(e.l.metro)}</span>${ctrlLieu(e.l, k)}<span class="ligne-duree">${dureeHtml(e.l)}</span>${HEURES_FIXES[e.l.id] ? "" : `<span class="ligne-duree">${puceNiveau(e.l.id, esc(e.l.nom))}</span>`}</li>`).join("")}</ol>
       ${items.length ? "" : `<p class="vide">${k === "mer" ? "The morning until 11 am, then a restaurant or café on the way to Montparnasse." : "No places yet."}</p>`}
     </div>`;
   }).join("")
@@ -1576,7 +1578,7 @@ document.addEventListener("click", e => {
   if (!b) return;
   if (b.dataset.fiche) { e.preventDefault(); ouvrirFiche(b.dataset.fiche); }
   else if (b.dataset.vignette) montrerPhoto(+b.dataset.vignette);
-  else if (b.dataset.ajouter) placer(b.dataset.ajouter, "ap");
+  else if (b.dataset.ajouter) { const id = b.dataset.ajouter; if (b.dataset.niv && RANG_NIVEAU[b.dataset.niv] != null) { const x = etat.selection.find(s => s.id === id); if (x) x.niveau = b.dataset.niv; else etat.selection.push({ id, day: "ap", jours: [], niveau: b.dataset.niv }); } placer(id, "ap"); }
   else if (b.dataset.placer) placer(b.dataset.placer, b.dataset.jour);
   else if (b.dataset.retirer) retirer(b.dataset.retirer);
   else if (b.dataset.monter) deplacerDansJour(b.dataset.monter, -1);
