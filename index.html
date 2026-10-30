@@ -742,11 +742,6 @@ footer { background: rgba(8, 13, 20, .92); }
         <p class="eyebrow">Tailor-made stay · Monday 14 to Wednesday 16 December 2026 · 2 nights</p>
         <h1>Babe, how about treating ourselves to <em>Paris, just the two of us?</em></h1>
         <p class="lead">Three winter days, you and me. Skating under the Grand Palais glass roof, hot chocolates, Christmas lights and Paris all to ourselves. Pick whatever you fancy, I’ll take care of the rest.</p>
-        <ol class="etapes">
-          <li><b>1</b>Pick your places by theme</li>
-          <li><b>2</b>Spread them over Monday afternoon, Tuesday and Wednesday morning</li>
-          <li><b>3</b>Send your notebook to the agency</li>
-        </ol>
         <a class="cta" href="#restaurants">Plan my stay</a>
         <p class="trajet"><span>From Rennes: <strong>about 1 h 30 by TGV</strong> to Montparnasse</span><span>Places selected: <strong id="total-hero">0</strong></span></p>
       </div>
@@ -1451,13 +1446,13 @@ function appliquerHoraires() {
 }
 appliquerHoraires();
 // lundi : départ possible au plus tôt après le trajet gare → hôtel et le dépôt des valises
-const departMinLundi = () => { const t = trajet("gare", "hotel"); return JOURNEES.lun.debut + dureeTrajet(t) + DEPOT_VALISES; };
+const departMinLundi = () => { const t = trajet("gare", "hotel"); return Math.ceil((JOURNEES.lun.debut + dureeTrajet(t) + DEPOT_VALISES) / 5) * 5; };
 const departLundi = () => Math.max(departMinLundi(), horaire("lun", "depart") || 0);
 const versInput = m => { if (m == null) return ""; const v = ((Math.round(m) % 1440) + 1440) % 1440; return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`; };
 const depuisInput = (s, soir) => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ""); if (!m) return null; let v = +m[1] * 60 + +m[2]; if (soir && v < H(6)) v += 1440; return v; };
 function horairesHtml() {
   try {
-    const champ = (k, c, lbl, soir) => `<label class="h-champ"><span>${lbl}</span><input type="time" step="900" data-horaire="${k}:${c}" value="${versInput(c === "depart" && k === "lun" ? departLundi() : horaire(k, c))}"${soir ? ' data-soir="1"' : ""}></label>`;
+    const champ = (k, c, lbl, soir) => `<label class="h-champ"><span>${lbl}</span><input type="time" step="300" min="00:00" data-horaire="${k}:${c}" value="${versInput(c === "depart" && k === "lun" ? departLundi() : horaire(k, c))}"${soir ? ' data-soir="1"' : ""}></label>`;
     return `<div class="horaires" role="group" aria-labelledby="h-titre"><p class="h-titre" id="h-titre">Your hours <small>From what time can you leave the hotel, and when do you want to be back?</small></p>
       <div class="h-jour"><b>Mon 14</b>${champ("lun", "depart", "Leave the hotel from")}${champ("lun", "retour", "Back by", true)}<small>Earliest ${heure(departMinLundi())} once the suitcases are dropped: add time to get changed and ready.</small></div>
       <div class="h-jour"><b>Tue 15</b>${champ("mar", "depart", "Leave the hotel from")}${champ("mar", "retour", "Back by", true)}</div>
