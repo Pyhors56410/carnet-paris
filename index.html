@@ -471,6 +471,14 @@ body.vue-carte #adresses { display: none; }
 .ajout-niveaux .lbl { color: var(--encre); font-weight: 600; }
 .badge-niv.must { color: var(--alerte); }
 .badge-niv.route { color: var(--muted); }
+.vues button[data-v="passe"][aria-pressed="true"] { background: var(--email); }
+.programme .vues button, .items .vues button { padding: 4px 7px; font-size: .74rem; white-space: nowrap; }
+.badge-vue { display: inline-block; margin-left: 6px; font-size: .66rem; font-weight: 600; letter-spacing: .03em; padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; color: var(--email); vertical-align: middle; white-space: nowrap; }
+.filtre-vue { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 18px 0 0; font-size: .86rem; color: var(--muted); }
+.filtre-vue button { border: 1px solid var(--ligne); background: var(--carte); color: var(--encre); border-radius: 999px; padding: 6px 12px; font: inherit; cursor: pointer; }
+.filtre-vue button[aria-pressed="true"] { background: var(--encre); color: var(--papier); border-color: var(--encre); }
+.filtre-vue .aide { flex-basis: 100%; font-size: .78rem; }
+#adresses[data-filtre-vue="passe"] .lieu:not([data-passe="1"]), #adresses[data-filtre-vue="visite"] .lieu[data-passe="1"] { display: none; }
 .hors-route .reserve-titre { color: var(--muted); }
 .choix-jours { grid-column: 1 / -1; margin-top: 4px; }
 .fixe-jour { font-size: .82rem; color: var(--email); font-weight: 500; }
@@ -1472,7 +1480,7 @@ LIEUX.splice(0, LIEUX.length, ...LIEUX.filter(l => !HORS_PARIS.includes(l.id)));
 const parId = Object.fromEntries(LIEUX.map(l => [l.id, l]));
 
 let etat = { selection: [], formulaire: {} };
-try { const s = JSON.parse(localStorage.getItem(CLE_STOCKAGE)); if (s && Array.isArray(s.selection)) etat = { selection: s.selection.filter(x => parId[x.id]), formulaire: s.formulaire || {}, patinoire: !!s.patinoire, mode: s.mode, horaires: s.horaires && typeof s.horaires === "object" ? s.horaires : {}, vueProg: s.vueProg, circuits: s.circuits && typeof s.circuits === "object" ? s.circuits : {} }; } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem(CLE_STOCKAGE)); if (s && Array.isArray(s.selection)) etat = { selection: s.selection.filter(x => parId[x.id]), formulaire: s.formulaire || {}, patinoire: !!s.patinoire, mode: s.mode, horaires: s.horaires && typeof s.horaires === "object" ? s.horaires : {}, vueProg: s.vueProg, circuits: s.circuits && typeof s.circuits === "object" ? s.circuits : {}, vues: s.vues && typeof s.vues === "object" ? s.vues : {} }; } catch (e) {}
 let depenses = { saisies: {}, ajouts: [], visites: {}, libres: [], maj: 0 };
 try { const d = JSON.parse(localStorage.getItem(CLE_STOCKAGE + "-depenses")); if (d && typeof d === "object") depenses = { ...depenses, ...d }; } catch (e) {}
 // anciennes sélections « Jour 1 / Jour 2 » : Jour 1 devient lundi, Jour 2 mardi
@@ -1492,7 +1500,7 @@ const commonsPage = url => { const m = /Special:FilePath\/([^?]+)/.exec(url || "
 function rendreAdresses() {
   const main = document.getElementById("adresses");
   const nav = document.getElementById("nav-themes");
-  main.innerHTML = THEMES.map((t, i) => {
+  main.innerHTML = `<div class="filtre-vue" role="group" aria-label="Show places"><span>Show</span><button type="button" data-filtre-v="tout" aria-pressed="true">All</button><button type="button" data-filtre-v="visite" aria-pressed="false">To visit</button><button type="button" data-filtre-v="passe" aria-pressed="false">👁 To see in passing</button><span class="aide">“In passing” = a façade, a monument, a window or a viewpoint you just walk past on the way (about 10 min), not a real visit. You can switch any place.</span></div>` + THEMES.map((t, i) => {
     const lieux = LIEUX.filter(l => l.theme === t.cle);
     return `<section class="theme" id="${t.ancre}" data-theme="${t.cle}" aria-labelledby="h-${t.ancre}">
       <div class="theme-head"><span class="num">${String(i + 1).padStart(2, "0")}</span><h2 id="h-${t.ancre}">${t.titre}</h2><p>${t.intro}</p></div>
@@ -1513,7 +1521,7 @@ function carte(l) {
   const photo = p0 ? `<img src="${esc(p0.src)}" alt="${esc(p0.alt || l.alt || l.nom)}" loading="lazy" decoding="async">` : "";
   const credit = p0 ? `<p class="credit">${creditHtml(p0)}</p>` : `<p class="credit">Photo coming soon · search: “${esc(l.motcle || l.nom)}”</p>`;
   const budget = l.budget ? l.budget + (l.prix ? ` · ${l.prix}` : "") : (l.prix ? `${l.prix} (to be checked)` : "to be checked");
-  return `<article class="lieu" data-id="${l.id}" data-dec="${l.dec ? 1 : 0}">
+  return `<article class="lieu" data-id="${l.id}" data-dec="${l.dec ? 1 : 0}" data-passe="${enPassant(l.id) ? 1 : 0}">
     <button type="button" class="ouvrir-fiche" data-fiche="${l.id}" aria-label="See the page: ${esc(l.nom)}"><figure class="photo" style="--teinte:${teinte}">
       <div class="repli" aria-hidden="${p0 ? "true" : "false"}"><b>${esc(l.nom)}</b><span>${esc(l.quartier)} · ${esc(l.type)}</span></div>
       ${photo}
@@ -1528,7 +1536,7 @@ function carte(l) {
       <p class="desc">${esc(l.desc)}</p>
       <dl class="faits">
         <div><dt class="sr">Metro</dt><span class="metro-m" aria-hidden="true">M</span><dd>${esc(l.metro)}</dd></div>
-        <div><dt>Duration</dt><dd>${duree(l.duree)}</dd></div>
+        <div><dt>Duration</dt><dd data-duree-carte="${l.id}">${enPassant(l.id) ? `👁 in passing, ${duree(dureePasse(l.id))}` : duree(l.duree)}</dd></div>
         <div><dt>Budget</dt><dd>${esc(budget)}</dd></div>
       </dl>
       <ul class="moments" aria-label="Best times">${MOMENTS.map(([k, v]) => `<li class="${l.moments.includes(k) ? "oui" : ""}">${v}</li>`).join("")}</ul>
@@ -1548,11 +1556,12 @@ function rendreZone(zone, id) {
   const nom = esc(parId[id].nom);
   const jour = jourDe(id);
   const carteEl = zone.closest(".lieu"); if (carteEl) carteEl.classList.toggle("choisi", !!jour);
+  try { if (carteEl) carteEl.dataset.passe = enPassant(id) ? "1" : "0"; document.querySelectorAll(`[data-duree-carte="${id}"]`).forEach(dd => { dd.textContent = enPassant(id) ? `👁 in passing, ${duree(dureePasse(id))}` : duree(parId[id].duree); }); } catch (e) {}
   zone.innerHTML = !jour
-    ? `<span class="jours-possibles ajout-niveaux"><span class="lbl">Add to notebook as</span><span class="jours niveaux" role="group" aria-label="Add ${nom} to the notebook">${NIVEAUX.map(([k, v]) => `<button type="button" data-ajouter="${id}" data-niv="${k}" aria-label="Add ${nom} to the notebook: ${v}">${v}</button>`).join("")}</span></span>`
+    ? `${puceVue(id, nom)}<span class="jours-possibles ajout-niveaux"><span class="lbl">Add to notebook as</span><span class="jours niveaux" role="group" aria-label="Add ${nom} to the notebook">${NIVEAUX.map(([k, v]) => `<button type="button" data-ajouter="${id}" data-niv="${k}" aria-label="Add ${nom} to the notebook: ${v}">${v}</button>`).join("")}</span></span>`
     : HEURES_FIXES[id] ? `<span class="fixe-jour">Booked: ${JOURNEES[HEURES_FIXES[id].jour].titre} at ${heure(HEURES_FIXES[id].debut)}</span>
        <button type="button" class="lien-retirer" data-retirer="${id}" aria-label="Remove ${nom} from the notebook">Remove</button>`
-    : `${puceNiveau(id, nom)}${puceJours(id, nom)}<button type="button" class="lien-retirer" data-retirer="${id}" aria-label="Remove ${nom} from the notebook">Remove</button>`;
+    : `${puceVue(id, nom)}${puceNiveau(id, nom)}${puceJours(id, nom)}<button type="button" class="lien-retirer" data-retirer="${id}" aria-label="Remove ${nom} from the notebook">Remove</button>`;
 }
 
 /* Trois niveaux d'envie : indispensable, à faire si possible, seulement si c'est sur le chemin.
@@ -1574,6 +1583,39 @@ function changerNiveau(id, n) {
   x.niveau = n; delete x.horsRoute;
   sauver(); rendreActions(id); rendreCarnet();
   const msg = document.getElementById("msg-organiser"); if (msg) msg.textContent = "Priority changed: organise again to update the itinerary.";
+}
+
+/* Visiter ou seulement voir en passant (façade, monument, vitrine, point de vue) :
+   en passant, quelques minutes sur le trajet au lieu d'un vrai temps de visite. */
+const PASSE_DEFAUT = new Set(["l28e", "l28a", "l28f", "l26", "v1", "m1", "m2", "m3", "m4", "m6", "m7", "m12", "m13", "ls2", "ls3", "ls4", "ls5", "ls6", "pa3", "bir", "tro", "vend", "dau", "hdv", "mont", "fsh", "vroy", "mbar", "jouf", "pano", "viv", "ccsa", "pv", "l28i"]);
+const DUREE_PASSE = 10;
+const vueFixe = id => { const l = parId[id]; return !l || !!HEURES_FIXES[id] || l.theme === "resto" || l.theme === "cafe"; };
+const vueDefaut = id => PASSE_DEFAUT.has(id) ? "passe" : "visite";
+const vueDe = id => { try { if (vueFixe(id)) return "visite"; const v = etat.vues && etat.vues[id]; return v === "passe" || v === "visite" ? v : vueDefaut(id); } catch (e) { return "visite"; } };
+const enPassant = id => vueDe(id) === "passe";
+const dureeVisite = id => { const x = etat.selection.find(s => s.id === id); return x && x.duree ? x.duree : parId[id].duree; };
+const dureePasse = id => { const x = etat.selection.find(s => s.id === id); return (x && x.dureePasse) || DUREE_PASSE; };
+const badgeVue = id => { try { return enPassant(id) ? `<span class="badge-vue" title="Seen in passing, on the way">👁 in passing</span>` : ""; } catch (e) { return ""; } };
+function puceVue(id, nom) {
+  try {
+    if (vueFixe(id)) return "";
+    const v = vueDe(id);
+    return `<span class="jours-possibles"><span class="lbl">How</span><span class="jours vues" role="group" aria-label="How to see ${nom}"><button type="button" data-vue="${id}" data-v="visite" aria-pressed="${v === "visite"}">Visit · ${duree(dureeVisite(id))}</button><button type="button" data-vue="${id}" data-v="passe" aria-pressed="${v === "passe"}">👁 See in passing · ${duree(dureePasse(id))}</button></span></span>`;
+  } catch (e) { return ""; }
+}
+function changerVue(id, v) {
+  try {
+    if (vueFixe(id) || (v !== "passe" && v !== "visite")) return;
+    etat.vues = etat.vues || {};
+    if (v === vueDefaut(id)) delete etat.vues[id]; else etat.vues[id] = v;
+    sauver(); rendreActions(id); rendreCarnet();
+    const msg = document.getElementById("msg-organiser"); if (msg && jourDe(id)) msg.textContent = "Visit / in passing changed: organise again to update the itinerary.";
+  } catch (e) {}
+}
+function filtrerVue(v) {
+  const main = document.getElementById("adresses"); if (!main) return;
+  if (v === "passe" || v === "visite") main.dataset.filtreVue = v; else delete main.dataset.filtreVue;
+  main.querySelectorAll("[data-filtre-v]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.filtreV === (v || "tout"))));
 }
 
 function puceJours(id, nom) {
@@ -1653,16 +1695,17 @@ const DEPOT_VALISES = 15, TICKET = TARIFS.metro, VOYAGEURS = 2;
 const eur = n => n == null ? "" : "€" + (Math.round(n * 100) / 100).toLocaleString("en-GB", { minimumFractionDigits: Number.isInteger(Math.round(n * 100) / 100) ? 0 : 2, maximumFractionDigits: 2 });
 const heure = m => { const h = Math.floor(m / 60) % 24, mm = String(Math.round(m % 60)).padStart(2, "0"); return `${h % 12 || 12}:${mm} ${h < 12 ? "am" : "pm"}`; };
 const lieuxRepas = l => l.theme === "resto" || l.theme === "cafe";
-const dureeDe = id => { const x = etat.selection.find(s => s.id === id); return x && x.duree ? x.duree : parId[id].duree; };
+const dureeDe = id => { const x = etat.selection.find(s => s.id === id); if (enPassant(id)) return (x && x.dureePasse) || DUREE_PASSE; return x && x.duree ? x.duree : parId[id].duree; };
 function changerDuree(id, pas) {
   const x = etat.selection.find(s => s.id === id); if (!x) return;
+  if (enPassant(id)) { const d = Math.max(5, Math.min(45, dureeDe(id) + (pas > 0 ? 5 : -5))); if (d === DUREE_PASSE) delete x.dureePasse; else x.dureePasse = d; sauver(); rendreCarnet(); rendreActions(id); return; }
   const d = Math.max(15, Math.min(480, dureeDe(id) + pas));
   if (d === parId[id].duree) delete x.duree; else x.duree = d;
   sauver(); rendreCarnet();
 }
 function dureeHtml(l) {
-  const d = dureeDe(l.id), modif = d !== l.duree;
-  return `<span class="duree-reglage" role="group" aria-label="Planned time for ${esc(l.nom)}"><span class="lbl-duree">Planned time</span><button type="button" data-duree-moins="${l.id}" aria-label="Shorten ${esc(l.nom)} by 15 minutes">−</button><span class="val">${duree(d)}</span><button type="button" data-duree-plus="${l.id}" aria-label="Lengthen ${esc(l.nom)} by 15 minutes">+</button>${modif ? `<span class="prevu">default ${duree(l.duree)}</span>` : ""}</span>`;
+  const p = enPassant(l.id), d = dureeDe(l.id), base = p ? DUREE_PASSE : l.duree, modif = d !== base, pas = p ? 5 : 15;
+  return `<span class="duree-reglage" role="group" aria-label="Planned time for ${esc(l.nom)}"><span class="lbl-duree">${p ? "👁 In passing" : "Planned time"}</span><button type="button" data-duree-moins="${l.id}" aria-label="Shorten ${esc(l.nom)} by ${pas} minutes">−</button><span class="val">${duree(d)}</span><button type="button" data-duree-plus="${l.id}" aria-label="Lengthen ${esc(l.nom)} by ${pas} minutes">+</button>${modif ? `<span class="prevu">default ${duree(base)}</span>` : ""}</span>`;
 }
 
 /* Trajets estimés à vol d'oiseau, corrigé pour les rues (×1,3).
@@ -1770,7 +1813,7 @@ function rendreCarnet() {
       const horsRoute = etat.selection.filter(x => x.day === "ap" && !x.reserve && x.horsRoute).map(x => parId[x.id]);
       items.splice(0, items.length, ...items.filter(l => !reserve.includes(l) && !horsRoute.includes(l)));
       return `<div class="jour a-organiser">${duelHtml()}<div class="jour-tete"><h3>To organise<small>Tick the possible days, then organise</small></h3><span>${items.length} place${items.length !== 1 ? "s" : ""}</span></div>
-      ${items.length ? `<ul class="items">${items.map(l => `<li><span class="nom">${esc(l.nom)}</span><span class="meta">${esc(l.arr)} · M ${esc(l.metro)}</span>${ctrlLieu(l, k)}<span class="choix-jours">${dureeHtml(l)}${puceNiveau(l.id, esc(l.nom))}${puceJours(l.id, esc(l.nom))}</span></li>`).join("")}</ul>`
+      ${items.length ? `<ul class="items">${items.map(l => `<li><span class="nom">${esc(l.nom)}</span><span class="meta">${esc(l.arr)} · M ${esc(l.metro)}</span>${ctrlLieu(l, k)}<span class="choix-jours">${dureeHtml(l)}${puceVue(l.id, esc(l.nom))}${puceNiveau(l.id, esc(l.nom))}${puceJours(l.id, esc(l.nom))}</span></li>`).join("")}</ul>`
         : `<p class="vide">Add places from the list or the map: they will appear here.</p>`}
       <button type="button" class="btn plein organiser" id="organiser"${etat.selection.some(x => !HEURES_FIXES[x.id]) ? "" : " disabled"}>Organise my itinerary</button>
       <p class="msg-organiser" id="msg-organiser" role="status">${items.length && etat.selection.some(x => x.day !== "ap" && !HEURES_FIXES[x.id]) && !etat.duel ? "New places are waiting: organise again to include them." : ""}</p>
@@ -1785,7 +1828,7 @@ function rendreCarnet() {
       <ol class="programme">${p.etapes.map(e => e.type === "trajet" ? trajetHtml(e)
         : e.type === "fixe" ? `<li class="etape-fixe"><b>${heure(e.debut)}</b><span>${e.txt}</span></li>`
         : `<li class="etape-lieu"><b>${heure(e.debut)}</b><span class="nom">${esc(e.l.nom)}${e.fixe ? ` <span class="heure">session booked</span>` : ""}${badgeNiveau(etat.selection.find(s => s.id === e.l.id))}</span>
-            <span class="meta">${esc(e.l.arr)} · M ${esc(e.l.metro)}</span>${ctrlLieu(e.l, k)}<span class="ligne-duree">${dureeHtml(e.l)}</span>${HEURES_FIXES[e.l.id] ? "" : `<span class="ligne-duree">${puceNiveau(e.l.id, esc(e.l.nom))}</span>`}</li>`).join("")}</ol>
+            <span class="meta">${esc(e.l.arr)} · M ${esc(e.l.metro)}</span>${ctrlLieu(e.l, k)}<span class="ligne-duree">${dureeHtml(e.l)}</span>${HEURES_FIXES[e.l.id] ? "" : `<span class="ligne-duree">${puceVue(e.l.id, esc(e.l.nom))}${puceNiveau(e.l.id, esc(e.l.nom))}</span>`}</li>`).join("")}</ol>
       ${items.length ? "" : `<p class="vide">${k === "mer" ? "The morning until 11 am, then a restaurant or café on the way to Montparnasse." : "No places yet."}</p>`}
     </div>`;
   }).join("")
@@ -1834,6 +1877,8 @@ document.addEventListener("click", e => {
   else if (b.dataset.passerDuel) { const x = etat.selection.find(s => s.id === etat.duel.a); if (x) x.reserve = true; organiser(); }
   else if (b.dataset.basculer) basculerJour(b.dataset.basculer, b.dataset.jour);
   else if (b.dataset.niveau) changerNiveau(b.dataset.niveau, b.dataset.niv);
+  else if (b.dataset.vue) changerVue(b.dataset.vue, b.dataset.v);
+  else if (b.dataset.filtreV) filtrerVue(b.dataset.filtreV);
   else if (b.id === "organiser") organiser();
   else if (b.dataset.mode) { etat.mode = b.dataset.mode; sauver(); rendreCarnet(); }
   else if (b.dataset.vueProg) { etat.vueProg = b.dataset.vueProg === "grille" ? "grille" : "jours"; sauver(); rendreProgramme(); }
@@ -1948,7 +1993,7 @@ function organiser() {
     const options = joursPossibles(x).map(k => {
       const pts = centre(jours[k]), p = point(x.id);
       const proche = p ? Math.min(...pts.map(q => Math.hypot(p.lat - q.lat, (p.lon - q.lon) * 0.66) * 111)) : 3;
-      return { k, score: proche + chargeDe(k, jours[k]) / chargeMax(k) * 4 };
+      return { k, score: proche * (enPassant(x.id) ? 3 : 1) + chargeDe(k, jours[k]) / chargeMax(k) * (enPassant(x.id) ? 1 : 4) };
     }).sort((a, b) => a.score - b.score);
     const choix = options.find(o => tient(o.k, ordonnerJour(o.k, [...jours[o.k], x.id])));
     if (choix) jours[choix.k].push(x.id); else nonPlaces.push(x.id);
@@ -2052,7 +2097,7 @@ function listeJour(k) { return etat.selection.filter(x => x.day === k).map(x => 
 function recapitulatif() {
   const f = lireFormulaire();
   const niv = id => { try { return ` [${nomNiveau(niveauDe(etat.selection.find(s => s.id === id)))}]`; } catch (e) { return ""; } };
-  const ligne = l => `- ${l.nom}${niv(l.id)} (${l.arr}, metro ${l.metro}) · ${duree(dureeDe(l.id))}`;
+  const ligne = l => `- ${l.nom}${niv(l.id)} (${l.arr}, metro ${l.metro}) · ${enPassant(l.id) ? "in passing, " : ""}${duree(dureeDe(l.id))}`;
   const tr = (t, de, vers) => !t ? "journey to be estimated" : `${t.apied ? `on foot ${t.metro} min` : `metro + walk ${t.metro} min`} or taxi ${t.taxiMin} min (~€${t.taxiEur})${marcheUtile(t, de, vers) ? ` or walk ${duree(t.marche)}` : ""}`;
   const bloc = (k, titre) => {
     if (k === "ap") { const it = etat.selection.filter(x => x.day === "ap"); return `${titre}\n${it.length ? it.map(x => `${ligne(parId[x.id])} · possible days: ${(x.jours && x.jours.length ? x.jours.map(d => JOURS.find(j => j[0] === d)[1]).join(", ") : "any")}`).join("\n") : "- (nothing yet)"}`; }
@@ -2308,7 +2353,7 @@ function ouvrirFiche(id) {
       <div class="large"><dt>Address</dt><dd>${esc(l.adresse)}</dd></div>
       <div><dt>Metro</dt><dd><span class="metro-m" aria-hidden="true">M</span> ${esc(l.metro)}</dd></div>
       <div><dt>Neighbourhood</dt><dd>${esc(l.quartier)}, ${esc(l.arr)}</dd></div>
-      <div><dt>Suggested time</dt><dd>${duree(l.duree)}</dd></div>
+      <div><dt>Suggested time</dt><dd data-duree-carte="${l.id}">${enPassant(l.id) ? `👁 in passing, ${duree(dureePasse(l.id))}` : duree(l.duree)}</dd></div>
       <div><dt>Budget</dt><dd>${esc(budget)}</dd></div>
       <div class="large"><dt>Best times</dt><dd><ul class="moments">${MOMENTS.map(([k, t]) => `<li class="${l.moments.includes(k) ? "oui" : ""}">${t}</li>`).join("")}</ul></dd></div>
       <div class="large"><dt>Hours, booking, notes</dt><dd>${esc(l.remarque || "Nothing in particular to report. Check opening hours before visiting.")}</dd></div>
@@ -2889,7 +2934,7 @@ function itinHtml(k, p) {
       const nom = spec ? (nd.id === "hotel" ? "Hôtel Exe Paris Centre" : "Gare Montparnasse") : nd.l.nom;
       const coul = spec ? (nd.id === "gare" ? "#3a4a57" : "#1f4c8f") : TEINTES_CARTE[nd.l.theme];
       if (i > 0) { const s = segs[i - 1], m = MODES_ITIN[s.mode]; liste += `<li class="via" style="--t:${tSeg[i - 1].toFixed(2)}s"><span>↓</span><span>${m.ico} ${m.lbl}${s.min != null ? `, ${s.min} min` : ""}</span></li>`; }
-      liste += `<li data-itin-li="${nd.ref.lettre}" style="--t:${tNoeud[i].toFixed(2)}s"><span class="num${spec ? " carre" : ""}" style="--c:${coul}">${nd.ref.lettre}</span><b class="itin-nom">${nd.l ? `<button type="button" class="nom-lien" data-fiche="${nd.l.id}">${esc(nom)}</button><span class="itin-duree" title="Planned time on site">${duree(dureeDe(nd.l.id))}</span>` : esc(nom)}</b><small>${nd.heure != null ? heure(nd.heure) : ""}${nd.l ? ` · ${esc(nd.l.type)}` : ""}</small></li>`;
+      liste += `<li data-itin-li="${nd.ref.lettre}" style="--t:${tNoeud[i].toFixed(2)}s"><span class="num${spec ? " carre" : ""}" style="--c:${coul}">${nd.ref.lettre}</span><b class="itin-nom">${nd.l ? `<button type="button" class="nom-lien" data-fiche="${nd.l.id}">${esc(nom)}</button><span class="itin-duree" title="${enPassant(nd.l.id) ? "Seen in passing" : "Planned time on site"}">${enPassant(nd.l.id) ? "👁 " : ""}${duree(dureeDe(nd.l.id))}</span>` : esc(nom)}</b><small>${nd.heure != null ? heure(nd.heure) : ""}${nd.l ? ` · ${esc(nd.l.type)}` : ""}</small></li>`;
     });
     const km = segs.reduce((s, x) => s + x.km, 0), minT = segs.reduce((s, x) => s + (x.min || 0), 0), nbLieux = n;
     return `<div class="itin" data-itin="${k}">
@@ -2952,7 +2997,7 @@ function emploiDuTempsHtml() {
       if (dispo0 > debutG) b += `<div class="edt-off" style="top:0;height:${((dispo0 - debutG) * PX).toFixed(1)}px"></div>`;
       if (dispo1 < finG) b += `<div class="edt-off" style="top:${y(dispo1)}px;bottom:0"></div>`;
       p.etapes.forEach(e => {
-        if (e.type === "lieu") b += `<button type="button" class="edt-bloc" data-fiche="${e.l.id}" style="top:${y(e.debut)}px;height:${Math.max(20, e.duree * PX - 2).toFixed(1)}px;--c:${TEINTES_CARTE[e.l.theme]}"><b>${esc(e.l.nom)}</b><span>${heure(e.debut)} – ${heure(e.debut + e.duree)}</span></button>`;
+        if (e.type === "lieu") b += `<button type="button" class="edt-bloc" data-fiche="${e.l.id}" style="top:${y(e.debut)}px;height:${Math.max(20, e.duree * PX - 2).toFixed(1)}px;--c:${TEINTES_CARTE[e.l.theme]}"><b>${enPassant(e.l.id) ? "👁 " : ""}${esc(e.l.nom)}</b><span>${heure(e.debut)} – ${heure(e.debut + e.duree)}</span></button>`;
         else if (e.type === "trajet" && e.duree) { const t = e.tr, ico = !t ? "" : t.apied ? "🚶" : modeTrajet() === "taxi" ? "🚕" : "🚇";
           b += `<div class="edt-trajet" style="top:${y(e.debut)}px;height:${Math.max(4, e.duree * PX).toFixed(1)}px">${e.duree * PX >= 13 ? `<span>${ico} ${e.duree} min${t && marcheUtile(t, e.de, e.vers) ? ` · 🚶 ${duree(t.marche)}` : ""}</span>` : ""}</div>`; }
         else if (e.type === "fixe") b += `<div class="edt-fixe" style="top:${y(e.debut)}px"><span>${heure(e.debut)} · ${e.txt}</span></div>`;
@@ -3137,7 +3182,7 @@ function rendreProgramme() {
               <button type="button" class="pe-photo" data-fiche="${l.id}" aria-label="See the page: ${esc(l.nom)}">${ph ? `<img src="${esc(ph.src)}" alt="" loading="lazy">` : `<span>${esc(l.nom)}</span>`}</button>
               <div class="pe-corps">
                 <p class="kicker">${esc(l.type)} · ${esc(l.quartier)} · ${esc(l.arr)}</p>
-                <h4><button type="button" data-fiche="${l.id}">${esc(l.nom)}</button>${e.fixe ? ` <span class="pe-badge">session booked</span>` : ""}${badgeNiveau(etat.selection.find(s => s.id === l.id))}</h4>
+                <h4><button type="button" data-fiche="${l.id}">${esc(l.nom)}</button>${e.fixe ? ` <span class="pe-badge">session booked</span>` : ""}${badgeNiveau(etat.selection.find(s => s.id === l.id))}${badgeVue(l.id)}</h4>
                 <p class="pe-desc">${esc(l.desc)}</p>
                 <p class="pe-pratique"><span class="metro-m" aria-hidden="true">M</span> ${esc(l.metro)} · ${esc(l.adresse)}${l.remarque ? `<br>${esc(l.remarque)}` : ""}</p>
               </div>
