@@ -197,6 +197,50 @@ body.vue-programme #adresses, body.vue-programme #carte { display: none; }
   .pe-lieu, .prog-tete { break-inside: avoid; }
 }
 
+/* ---------- Circuits (balades toutes faites) ---------- */
+.circuits-paris[hidden] { display: none; }
+body.vue-circuits #adresses, body.vue-circuits #carte, body.vue-circuits #programme, body.vue-circuits #depenses { display: none; }
+.themes-nav .vers-circuits { color: var(--encre); border: 1px solid var(--ligne); border-radius: 6px; font-weight: 500; }
+.themes-nav .vers-circuits.actif { background: var(--encre); color: var(--papier); }
+.circ-vide { border: 1px dashed var(--ligne); border-radius: 10px; padding: 22px; color: var(--muted); max-width: 62ch; }
+.circ-vide b { color: var(--encre); }
+.circ { margin: 0 0 34px; border: 1px solid var(--ligne); border-radius: 10px; background: rgba(13, 19, 26, .6); overflow: hidden; }
+.circ-tete { padding: 14px 16px; border-bottom: 1px solid var(--ligne); }
+.circ-tete h3 { font-family: var(--f-titre); font-weight: 500; font-size: 1.5rem; margin: 0 0 4px; }
+.circ-tete p { margin: 4px 0 0; font-size: .86rem; color: var(--muted); }
+.circ-tete .circ-chiffres { color: var(--encre); }
+.circ-tete a { color: var(--laiton-vif); }
+.circ-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.circ-corps { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+.circ-carte { position: relative; background: #e9e6df; min-height: 420px; }
+.circ-carte svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.circ-carte .fond { filter: saturate(.55) brightness(.92); }
+.circ-carte .trace { fill: none; stroke: #f3c46b; stroke-linecap: round; stroke-linejoin: round; }
+.circ-carte .pt-c text, .circ-carte .pt-s text { font-family: var(--f-texte); font-weight: 600; pointer-events: none; }
+.circ-carte .pt-c, .circ-carte .pt-s { cursor: pointer; }
+.circ-carte .pt-s { opacity: .5; }
+.circ-carte .pt-s:hover { opacity: 1; }
+.circ-liste { list-style: none; margin: 0; padding: 8px 0; border-left: 1px solid var(--ligne); font-size: .86rem; max-height: 560px; overflow-y: auto; }
+.circ-liste li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 14px; align-items: start; }
+.circ-liste li + li { border-top: 1px dotted var(--ligne); }
+.circ-liste .num { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--c, #b8862d); color: #fff; font-weight: 600; font-size: .74rem; border: 2px solid #fff; }
+.circ-liste .num.ajout { border-style: dashed; }
+.circ-liste b { font-weight: 600; }
+.circ-liste small { display: block; color: var(--muted); font-size: .76rem; }
+.circ-liste .notre { display: inline-block; margin-left: 6px; font-size: .64rem; text-transform: uppercase; letter-spacing: .05em; color: var(--laiton-vif); border: 1px solid currentColor; border-radius: 999px; padding: 0 6px; vertical-align: middle; }
+.circ-liste .via { display: block; grid-column: 2 / -1; padding: 0; font-size: .72rem; color: var(--muted); border: 0; }
+.circ-mini { font: inherit; font-size: .74rem; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--ligne); background: var(--carte); color: var(--encre); cursor: pointer; white-space: nowrap; }
+.circ-sugg { padding: 12px 16px; border-top: 1px solid var(--ligne); }
+.circ-sugg p { margin: 0 0 8px; font-size: .82rem; font-weight: 600; }
+.circ-sugg p span { font-weight: 400; color: var(--muted); }
+.circ-sugg ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.circ-sugg li { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--ligne); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: .8rem; }
+.circ-sugg li i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.circ-sugg li button.ajouter-c { border: 0; border-radius: 999px; background: var(--laiton-vif); color: #17120a; font: inherit; font-size: .74rem; font-weight: 600; padding: 2px 9px; cursor: pointer; }
+.circ-msg { margin: 8px 0 0; font-size: .8rem; color: var(--laiton-vif); }
+.circ-msg:empty { display: none; }
+@media (max-width: 860px) { .circ-corps { grid-template-columns: 1fr; } .circ-carte { min-height: 320px; } .circ-liste { border-left: 0; border-top: 1px solid var(--ligne); max-height: none; } }
+
 /* ---------- Carnet de dépenses ---------- */
 .depenses-paris[hidden] { display: none; }
 body.vue-depenses #adresses, body.vue-depenses #carte, body.vue-depenses #programme { display: none; }
@@ -803,6 +847,10 @@ footer { background: rgba(8, 13, 20, .92); }
     <div class="prog-actions dep-actions"><button type="button" class="btn plein" id="dep-csv">Export to CSV</button><button type="button" class="btn" id="dep-copier">Copy the summary</button><button type="button" class="btn" id="dep-imprimer">Print or save as PDF</button></div>
     <div id="depenses-contenu"></div>
   </section>
+  <section class="programme-paris circuits-paris" id="circuits" aria-labelledby="h-circuits" hidden>
+    <div class="theme-head"><span class="num">Routes</span><h2 id="h-circuits">Walking routes</h2><p>Ready-made walks found online, step by step on the map, with their source. Places from our list that are along the way can be added to enrich them.</p></div>
+    <div id="circuits-contenu"></div>
+  </section>
   <section class="carte-paris" id="carte" aria-labelledby="h-carte" hidden>
     <div class="theme-head"><span class="num">Map</span><h2 id="h-carte">All the places on the map</h2><p>Hover over a marker to see a preview, click to open its page. On a phone, tap a marker. Drag to move the map, use the wheel or the buttons to zoom. Markers circled in gold are in your notebook.</p></div>
     <div class="carte-outils" id="carte-filtres" role="group" aria-label="Themes shown"></div>
@@ -1373,7 +1421,7 @@ LIEUX.splice(0, LIEUX.length, ...LIEUX.filter(l => !HORS_PARIS.includes(l.id)));
 const parId = Object.fromEntries(LIEUX.map(l => [l.id, l]));
 
 let etat = { selection: [], formulaire: {} };
-try { const s = JSON.parse(localStorage.getItem(CLE_STOCKAGE)); if (s && Array.isArray(s.selection)) etat = { selection: s.selection.filter(x => parId[x.id]), formulaire: s.formulaire || {}, patinoire: !!s.patinoire, mode: s.mode, horaires: s.horaires && typeof s.horaires === "object" ? s.horaires : {}, vueProg: s.vueProg }; } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem(CLE_STOCKAGE)); if (s && Array.isArray(s.selection)) etat = { selection: s.selection.filter(x => parId[x.id]), formulaire: s.formulaire || {}, patinoire: !!s.patinoire, mode: s.mode, horaires: s.horaires && typeof s.horaires === "object" ? s.horaires : {}, vueProg: s.vueProg, circuits: s.circuits && typeof s.circuits === "object" ? s.circuits : {} }; } catch (e) {}
 let depenses = { saisies: {}, ajouts: [], visites: {}, libres: [], maj: 0 };
 try { const d = JSON.parse(localStorage.getItem(CLE_STOCKAGE + "-depenses")); if (d && typeof d === "object") depenses = { ...depenses, ...d }; } catch (e) {}
 // anciennes sélections « Jour 1 / Jour 2 » : Jour 1 devient lundi, Jour 2 mardi
@@ -1399,7 +1447,7 @@ function rendreAdresses() {
       <div class="theme-head"><span class="num">${String(i + 1).padStart(2, "0")}</span><h2 id="h-${t.ancre}">${t.titre}</h2><p>${t.intro}</p></div>
       <div class="grille">${lieux.map(carte).join("")}</div></section>`;
   }).join("");
-  nav.innerHTML = `<li><a href="#programme" class="vers-programme">My itinerary</a></li><li><a href="#carte" class="vers-carte">The map</a></li><li><a href="#depenses" class="vers-depenses">Expenses</a></li>` + ["noel", "balade", "musee", "resto", "cafe", "artisan", "shopping"].map(c => THEMES.find(t => t.cle === c)).filter(Boolean).map(t => `<li><a href="#${t.ancre}" data-ancre="${t.ancre}">${t.titre}<span class="n">${LIEUX.filter(l => l.theme === t.cle).length}</span></a></li>`).join("");
+  nav.innerHTML = `<li><a href="#programme" class="vers-programme">My itinerary</a></li><li><a href="#carte" class="vers-carte">The map</a></li><li><a href="#depenses" class="vers-depenses">Expenses</a></li><li><a href="#circuits" class="vers-circuits">Walking routes</a></li>` + ["noel", "balade", "musee", "resto", "cafe", "artisan", "shopping"].map(c => THEMES.find(t => t.cle === c)).filter(Boolean).map(t => `<li><a href="#${t.ancre}" data-ancre="${t.ancre}">${t.titre}<span class="n">${LIEUX.filter(l => l.theme === t.cle).length}</span></a></li>`).join("");
   main.querySelectorAll(".photo img").forEach(img => {
     const fig = img.closest(".photo");
     const ok = () => fig.classList.add("ok");
@@ -2536,6 +2584,102 @@ try { (function brancherCarte() {
   }), { passive: false });
   window.addEventListener("resize", carteSure(() => { if (!document.getElementById("carte").hidden) preparerVue(); }));
 })(); } catch (err) { try { console.warn("Carte :", err); } catch (_) {} }
+/* =====================================================================
+   CIRCUITS — balades toutes faites trouvées en ligne (source citée), étapes géolocalisées,
+   enrichies avec les lieux de notre liste (ajouts gardés sur l'appareil, dans etat.circuits).
+   Une étape peut renvoyer à un lieu de la base avec « lieu: id » (sa fiche et sa position servent alors).
+   ===================================================================== */
+const CIRCUITS = [
+  // { id: "c-xxx", nom: "…", source: { titre: "…", url: "https://…" }, desc: "…", duree: 120 (min, selon la source), km: 3.5,
+  //   etapes: [{ nom: "…", adresse: "…", lat: 48.85, lon: 2.35, note: "…", lieu: "l28h" }] }
+];
+const kmEntre = (a, b) => { const dLat = (b.lat - a.lat) * 111.2, dLon = (b.lon - a.lon) * 111.2 * Math.cos(a.lat * Math.PI / 180); return Math.hypot(dLat, dLon) * 1.3; };
+// distance (km, à vol d'oiseau) d'un point à un segment
+function kmAuSegment(p, a, b) {
+  const k = Math.cos(a.lat * Math.PI / 180), ax = a.lon * k, ay = a.lat, bx = b.lon * k, by = b.lat, px = p.lon * k, py = p.lat;
+  const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy, t = L ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L)) : 0;
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy)) * 111.2;
+}
+const ajoutsCircuit = c => (((etat.circuits || {})[c.id] || {}).ajouts || []).filter(id => parId[id] && positionDe(id));
+// étapes dans l'ordre : celles de la source, puis nos lieux ajoutés là où ils rallongent le moins la marche
+function etapesCircuit(c) {
+  const pts = c.etapes.map((e, i) => { const g = e.lieu && parId[e.lieu] && positionDe(e.lieu); return { ...e, lat: g ? g.lat : e.lat, lon: g ? g.lon : e.lon, nom: e.nom || (e.lieu && parId[e.lieu] ? parId[e.lieu].nom : ""), source: true, rang: i + 1 }; }).filter(e => isFinite(e.lat) && isFinite(e.lon));
+  ajoutsCircuit(c).forEach(id => {
+    const g = positionDe(id), x = { nom: parId[id].nom, adresse: parId[id].adresse, lat: g.lat, lon: g.lon, lieu: id, source: false };
+    let best = pts.length, cout = Infinity;
+    for (let i = 0; i <= pts.length; i++) { const a = pts[i - 1], b = pts[i]; const plus = (a ? kmEntre(a, x) : 0) + (b ? kmEntre(x, b) : 0) - (a && b ? kmEntre(a, b) : 0); if (plus < cout) { cout = plus; best = i; } }
+    pts.splice(best, 0, x);
+  });
+  return pts;
+}
+// lieux de notre liste à moins de ~350 m du tracé, pas encore dans la balade
+function suggestionsCircuit(c, pts) {
+  const dedans = new Set(pts.map(e => e.lieu).filter(Boolean));
+  return LIEUX.filter(l => !dedans.has(l.id) && positionDe(l.id)).map(l => { const g = positionDe(l.id); let d = Infinity;
+    for (let i = 0; i < pts.length; i++) d = Math.min(d, i ? kmAuSegment(g, pts[i - 1], pts[i]) : kmEntre(g, pts[0]) / 1.3);
+    return { l, d }; }).filter(x => x.d <= 0.35).sort((a, b) => a.d - b.d).slice(0, 14);
+}
+function carteCircuitHtml(c, pts, sugg) {
+  const W0 = FOND.nx * 256, H0 = FOND.ny * 256;
+  const pos = g => { const v = versCarte(g.lat, g.lon); return v ? { x: v.x / 100 * W0, y: v.y / 100 * H0 } : null; };
+  const P = pts.map(pos);
+  if (P.some(q => !q)) return `<p class="circ-vide">Part of this walk is outside our map of Paris.</p>`;
+  let x0 = Math.min(...P.map(q => q.x)), x1 = Math.max(...P.map(q => q.x)), y0 = Math.min(...P.map(q => q.y)), y1 = Math.max(...P.map(q => q.y));
+  let w = Math.max(x1 - x0, 200) * 1.3, hh = Math.max(y1 - y0, 170) * 1.3; if (w / hh > 1.25) hh = w / 1.25; else w = hh * 1.25;
+  const vx = Math.max(0, Math.min(W0 - w, (x0 + x1) / 2 - w / 2)), vy = Math.max(0, Math.min(H0 - hh, (y0 + y1) / 2 - hh / 2)), u = w / 560;
+  let svg = `<svg viewBox="${vx.toFixed(0)} ${vy.toFixed(0)} ${w.toFixed(0)} ${hh.toFixed(0)}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of the walk ${esc(c.nom)}"><image class="fond" href="carte/paris.jpg" x="0" y="0" width="${W0}" height="${H0}" preserveAspectRatio="none"/>`;
+  svg += `<polyline class="trace" points="${P.map(q => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" ")}" stroke-width="${(4 * u).toFixed(2)}" stroke-dasharray="${(9 * u).toFixed(1)} ${(6 * u).toFixed(1)}"/>`;
+  sugg.forEach(s => { const q = pos(positionDe(s.l.id)); if (!q) return;
+    svg += `<g class="pt-s" data-fiche-svg="${s.l.id}"><title>${esc(s.l.nom)} · from our list, ${Math.round(s.d * 1000)} m from the route</title><circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="${(7 * u).toFixed(1)}" fill="${TEINTES_CARTE[s.l.theme]}" stroke="#fff" stroke-width="${(1.5 * u).toFixed(2)}" stroke-dasharray="${(3 * u).toFixed(1)} ${(2 * u).toFixed(1)}"/></g>`; });
+  pts.forEach((e, i) => { const q = P[i], r = 12 * u, coul = e.source ? "#b8862d" : TEINTES_CARTE[parId[e.lieu].theme];
+    svg += `<g class="pt-c"${e.lieu ? ` data-fiche-svg="${e.lieu}"` : ""}><title>${esc(e.nom)}</title><circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="${r.toFixed(1)}" fill="${coul}" stroke="#fff" stroke-width="${(2.4 * u).toFixed(2)}"${e.source ? "" : ` stroke-dasharray="${(4 * u).toFixed(1)} ${(2.5 * u).toFixed(1)}"`}/><text x="${q.x.toFixed(1)}" y="${(q.y + 4.3 * u).toFixed(1)}" text-anchor="middle" font-size="${(12 * u).toFixed(2)}" fill="#fff">${i + 1}</text></g>`; });
+  return svg + `</svg>`;
+}
+function circuitHtml(c) {
+  const pts = etapesCircuit(c); if (pts.length < 2) return "";
+  const sugg = suggestionsCircuit(c, pts);
+  let km = 0; for (let i = 1; i < pts.length; i++) km += kmEntre(pts[i - 1], pts[i]);
+  const marche = Math.round(km / 4.5 * 60), visites = pts.filter(e => e.lieu).reduce((s, e) => s + dureeDe(e.lieu), 0);
+  const nos = pts.filter(e => e.lieu).map(e => e.lieu), dansCarnet = nos.filter(id => etat.selection.some(s => s.id === id)).length;
+  const liste = pts.map((e, i) => {
+    const l = e.lieu && parId[e.lieu], coul = e.source ? "#b8862d" : TEINTES_CARTE[l.theme];
+    const via = i ? `<span class="via">↓ on foot ${duree(Math.max(1, Math.round(kmEntre(pts[i - 1], e) / 4.5 * 60)))}</span>` : "";
+    return `<li>${via}<span class="num${e.source ? "" : " ajout"}" style="--c:${coul}">${i + 1}</span><span><b>${l ? `<button type="button" class="nom-lien" data-fiche="${l.id}">${esc(e.nom)}</button>` : esc(e.nom)}</b>${l ? `<span class="notre">${e.source ? "in our list" : "added"}</span>` : ""}<small>${esc(e.adresse || (l ? l.adresse : ""))}</small>${e.note ? `<small>${esc(e.note)}</small>` : ""}</span>${!e.source ? `<button type="button" class="circ-mini" data-circ-retirer="${c.id}" data-lieu="${e.lieu}">Remove</button>` : ""}</li>`;
+  }).join("");
+  return `<article class="circ" id="circ-${c.id}">
+    <div class="circ-tete"><h3>${esc(c.nom)}</h3>
+      <p class="circ-chiffres">${pts.length} stops · about ${km.toFixed(1)} km · ${duree(marche)} of walking${visites ? ` + ${duree(visites)} of visits from our list` : ""}${c.duree ? ` · the source says ${duree(c.duree)}` : ""}</p>
+      ${c.desc ? `<p>${esc(c.desc)}</p>` : ""}
+      ${c.source ? `<p>Source: <a href="${esc(c.source.url)}" target="_blank" rel="noopener">${esc(c.source.titre)}</a></p>` : ""}
+      <div class="circ-actions">${nos.length ? `<button type="button" class="btn" data-circ-carnet="${c.id}">Add its ${nos.length} place${nos.length > 1 ? "s" : ""} from our list to my notebook${dansCarnet ? ` (${dansCarnet} already in)` : ""}</button>` : ""}</div>
+      <p class="circ-msg" role="status"></p></div>
+    <div class="circ-corps"><div class="circ-carte">${carteCircuitHtml(c, pts, sugg)}</div><ol class="circ-liste">${liste}</ol></div>
+    ${sugg.length ? `<div class="circ-sugg"><p>Along the way, from our list <span>(faded dots on the map, under 350 m from the route)</span></p><ul>${sugg.map(s => `<li style="--c:${TEINTES_CARTE[s.l.theme]}"><i></i><button type="button" class="nom-lien" data-fiche="${s.l.id}">${esc(s.l.nom)}</button><button type="button" class="ajouter-c" data-circ-ajouter="${c.id}" data-lieu="${s.l.id}" aria-label="Add ${esc(s.l.nom)} to this walk">+ Add</button></li>`).join("")}</ul></div>` : ""}
+  </article>`;
+}
+function rendreCircuits() {
+  const zone = document.getElementById("circuits-contenu"); if (!zone) return;
+  try {
+    const html = CIRCUITS.map(c => { try { return circuitHtml(c); } catch (e) { return ""; } }).join("");
+    zone.innerHTML = html || `<div class="circ-vide"><p><b>No walks yet.</b></p><p>Send Pierre-Yves’s assistant the walking routes you like (blog posts, tourist-office pages, articles): each one will appear here with its stops on the map, its source, and the places from our list that are on the way.</p></div>`;
+  } catch (e) { zone.innerHTML = `<p class="circ-vide">The walks could not be displayed.</p>`; }
+}
+document.addEventListener("click", e => {
+  try {
+    const b = e.target.closest && e.target.closest("[data-circ-ajouter], [data-circ-retirer], [data-circ-carnet], [data-fiche-svg]"); if (!b) return;
+    if (b.dataset.ficheSvg) { ouvrirFiche(b.dataset.ficheSvg); return; }
+    const id = b.dataset.circAjouter || b.dataset.circRetirer || b.dataset.circCarnet;
+    etat.circuits = etat.circuits || {}; const s = etat.circuits[id] = etat.circuits[id] || { ajouts: [] };
+    let msg = "";
+    if (b.dataset.circAjouter) { if (!s.ajouts.includes(b.dataset.lieu)) s.ajouts.push(b.dataset.lieu); msg = `${parId[b.dataset.lieu].nom} added to the walk.`; }
+    else if (b.dataset.circRetirer) { s.ajouts = s.ajouts.filter(x => x !== b.dataset.lieu); msg = `${parId[b.dataset.lieu].nom} removed from the walk.`; }
+    else { const c = CIRCUITS.find(x => x.id === id); const ids = etapesCircuit(c).map(x => x.lieu).filter(Boolean); let n = 0;
+      ids.forEach(l => { if (!etat.selection.some(x => x.id === l)) { etat.selection.push({ id: l, day: "ap", jours: [], niveau: "nice" }); n++; rendreActions(l); } });
+      msg = n ? `${n} place${n > 1 ? "s" : ""} added to your notebook, in “To organise”.` : "These places are already in your notebook."; rendreCarnet(); }
+    sauver(); rendreCircuits();
+    const m = document.querySelector(`#circ-${id} .circ-msg`); if (m) m.textContent = msg;
+  } catch (err) {}
+});
 function afficherVue() {
   const h = location.hash;
   if (h.startsWith("#lieu-")) return;
@@ -2544,14 +2688,21 @@ function afficherVue() {
   document.getElementById("depenses").hidden = !dep;
   document.querySelector(".vers-depenses")?.classList.toggle("actif", dep);
   if (dep) { rendreDepenses(); window.scrollTo({ top: document.getElementById("depenses").getBoundingClientRect().top + scrollY - 70 }); }
+  const circ = h === "#circuits";
+  try {
+    document.body.classList.toggle("vue-circuits", circ);
+    document.getElementById("circuits").hidden = !circ;
+    document.querySelector(".vers-circuits")?.classList.toggle("actif", circ);
+    if (circ) { rendreCircuits(); window.scrollTo({ top: document.getElementById("circuits").getBoundingClientRect().top + scrollY - 70 }); }
+  } catch (e) { try { console.warn("Circuits :", e); } catch (_) {} }
   const prog = h === "#programme";
   document.body.classList.toggle("vue-programme", prog);
   document.getElementById("programme").hidden = !prog;
   document.querySelector(".vers-programme")?.classList.toggle("actif", prog);
   if (prog) { rendreProgramme(); window.scrollTo({ top: document.getElementById("programme").getBoundingClientRect().top + scrollY - 70 }); }
   const carte = h === "#carte";
-  const avant = document.body.classList.contains("vue-carte"), avantProg = !prog && !dep && document.body.dataset.etaitProg === "1";
-  document.body.dataset.etaitProg = prog || dep ? "1" : "";
+  const avant = document.body.classList.contains("vue-carte"), avantProg = !prog && !dep && !circ && document.body.dataset.etaitProg === "1";
+  document.body.dataset.etaitProg = prog || dep || circ ? "1" : "";
   document.body.classList.toggle("vue-carte", carte);
   document.getElementById("carte").hidden = !carte;
   document.querySelector(".vers-carte")?.classList.toggle("actif", carte);
