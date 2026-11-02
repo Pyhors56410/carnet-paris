@@ -3445,5 +3445,186 @@ suivreTheme();
 lireHash();
 afficherVue();
 </script>
+<!-- Onglet « On the spot » de l'app iPhone (ajouté par construire_app.py) : checklist des lieux choisis,
+     position en direct, distance et direction de chaque lieu, et lieux les plus proches. -->
+<button type="button" id="sp-ouvrir" aria-label="On the spot: my checklist and places near me"><span aria-hidden="true">➤</span><b>On the spot</b></button>
+<div id="sp" hidden role="dialog" aria-modal="true" aria-labelledby="sp-titre">
+  <div class="sp-tete">
+    <h2 id="sp-titre">On the spot</h2>
+    <button type="button" id="sp-fermer" aria-label="Close">✕</button>
+  </div>
+  <div class="sp-onglets" role="tablist">
+    <button type="button" role="tab" data-sp-vue="liste" aria-selected="true">My checklist</button>
+    <button type="button" role="tab" data-sp-vue="pres" aria-selected="false">Near me</button>
+  </div>
+  <p id="sp-pos" class="sp-pos"></p>
+  <div id="sp-corps"></div>
+</div>
+<style>
+#sp-ouvrir { position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); z-index: 35;
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px 10px 12px; border: 0; border-radius: 999px; background: var(--email, #1f4c8f); color: #fff;
+  font: 600 .9rem/1 Jost, system-ui, sans-serif; box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+#sp-ouvrir span { display: inline-block; transform: rotate(-45deg); font-size: 1rem; }
+@media (min-width: 981px) { #sp-ouvrir { bottom: 24px; } }
+#sp { position: fixed; inset: 0; z-index: 60; background: var(--papier, #f1f3f2); color: var(--encre, #1b2329); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 30px) max(16px, env(safe-area-inset-left, 0px));
+  font-family: Jost, system-ui, sans-serif; }
+#sp[hidden] { display: none; }
+.sp-tete { display: flex; justify-content: space-between; align-items: center; }
+.sp-tete h2 { font-family: "Bodoni Moda", Georgia, serif; font-weight: 500; font-size: 1.7rem; margin: 6px 0; }
+#sp-fermer { border: 0; background: none; font-size: 1.4rem; padding: 8px 4px 8px 16px; color: inherit; }
+.sp-onglets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--zinc-clair, #dde2e5); padding: 4px; border-radius: 10px; margin: 6px 0 10px; }
+.sp-onglets button { border: 0; border-radius: 7px; padding: 9px 4px; background: none; font: 500 .92rem Jost, system-ui, sans-serif; color: inherit; }
+.sp-onglets button[aria-selected="true"] { background: var(--carte, #fff); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.sp-pos { font-size: .82rem; color: var(--muted, #56636c); margin: 0 0 10px; }
+.sp-pos button { font: inherit; color: var(--email, #1f4c8f); background: none; border: 0; padding: 0; text-decoration: underline; }
+.sp-jour { font: 600 .74rem Jost, system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--laiton, #9a7429); margin: 18px 0 6px; }
+.sp-avance { font-size: .9rem; margin: 0 0 4px; }
+.sp-barre { height: 6px; border-radius: 3px; background: var(--zinc-clair, #dde2e5); overflow: hidden; margin-bottom: 6px; }
+.sp-barre i { display: block; height: 100%; background: var(--laiton-vif, #d6a84e); }
+.sp-liste { list-style: none; margin: 0; padding: 0; }
+.sp-liste li { display: grid; grid-template-columns: 30px minmax(0, 1fr) 54px; gap: 10px; align-items: center; background: var(--carte, #fff);
+  border: 1px solid var(--ligne, rgba(27,35,41,.12)); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.sp-liste li.fait { opacity: .5; }
+.sp-liste li.fait .sp-nom { text-decoration: line-through; }
+.sp-liste li.proche { border-color: var(--laiton-vif, #d6a84e); box-shadow: 0 0 0 2px rgba(214,168,78,.35); }
+.sp-liste input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--cadre, #2d5a4c); margin: 0; }
+.sp-nom { font-weight: 600; font-size: .98rem; line-height: 1.25; }
+.sp-meta { font-size: .78rem; color: var(--muted, #56636c); margin-top: 2px; }
+.sp-actions { display: flex; gap: 12px; margin-top: 6px; font-size: .8rem; }
+.sp-actions a, .sp-actions button { color: var(--email, #1f4c8f); background: none; border: 0; padding: 0; font: inherit; text-decoration: underline; }
+.sp-dir { text-align: center; font-size: .78rem; font-weight: 600; line-height: 1.2; }
+.sp-fleche { display: block; width: 30px; height: 30px; margin: 0 auto 2px; transition: transform .25s ease; }
+.sp-badge { display: inline-block; font-size: .66rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
+  background: var(--laiton-vif, #d6a84e); color: #131f2a; margin-left: 6px; vertical-align: 2px; }
+.sp-vide { color: var(--muted, #56636c); font-size: .92rem; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #sp { background: #10181f; color: #e8ecef; }
+  :root:not([data-theme="light"]) .sp-liste li { background: #1a252e; border-color: rgba(255,255,255,.1); }
+  :root:not([data-theme="light"]) .sp-onglets { background: #22303b; } :root:not([data-theme="light"]) .sp-onglets button[aria-selected="true"] { background: #33444f; } }
+</style>
+<script>
+(function () {
+  if (typeof LIEUX === "undefined" || typeof etat === "undefined") return;
+  var panneau = document.getElementById("sp"), corps = document.getElementById("sp-corps"), ligne = document.getElementById("sp-pos");
+  var vue = "liste", moi = null, cap = null, suivi = null, boussole = false;
+  var JOURS_SP = { lun: "Monday 14", mar: "Tuesday 15", mer: "Wednesday 16", ap: "Not placed yet" };
+  var echap = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+  var pos = function (id) { try { return positionDe(id); } catch (e) { return null; } };
+  var rad = Math.PI / 180;
+  function distance(a, b) { // km, à vol d'oiseau
+    var dl = (b.lat - a.lat) * rad, dn = (b.lon - a.lon) * rad;
+    var h = Math.sin(dl / 2) * Math.sin(dl / 2) + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dn / 2) * Math.sin(dn / 2);
+    return 12742 * Math.asin(Math.sqrt(h));
+  }
+  function azimut(a, b) {
+    var y = Math.sin((b.lon - a.lon) * rad) * Math.cos(b.lat * rad);
+    var x = Math.cos(a.lat * rad) * Math.sin(b.lat * rad) - Math.sin(a.lat * rad) * Math.cos(b.lat * rad) * Math.cos((b.lon - a.lon) * rad);
+    return (Math.atan2(y, x) / rad + 360) % 360;
+  }
+  var POINTS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  function texteDistance(km) { return km < 1 ? Math.round(km * 1000 / 10) * 10 + " m" : km.toFixed(1) + " km"; }
+  function aPied(km) { var m = Math.max(1, Math.round(km * 1.3 / 4.5 * 60)); return m < 60 ? m + " min walk" : Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " walk"; }
+  function fait(id) { return !!(typeof depenses !== "undefined" && depenses.visites && depenses.visites[id]); }
+  function cocher(id, oui) {
+    if (typeof depenses === "undefined") return;
+    depenses.visites = depenses.visites || {};
+    if (oui) depenses.visites[id] = true; else delete depenses.visites[id];
+    try { sauverDepenses(); } catch (e) {}
+    try { if (typeof rendreDepenses === "function") rendreDepenses(); } catch (e) {}
+  }
+  function direction(p) {
+    if (!moi || !p) return '<div class="sp-dir">—</div>';
+    var km = distance(moi, p), az = azimut(moi, p), rot = cap == null ? az : az - cap;
+    return '<div class="sp-dir"><svg class="sp-fleche" data-az="' + az.toFixed(1) + '" viewBox="0 0 24 24" style="transform:rotate(' + rot.toFixed(0) + 'deg)" aria-hidden="true">' +
+      '<path d="M12 2 L19 21 L12 17 L5 21 Z" fill="currentColor"/></svg>' + texteDistance(km) +
+      (cap == null ? '<br><span style="font-weight:400">' + POINTS[Math.round(az / 45) % 8] + "</span>" : "") + "</div>";
+  }
+  function ligneLieu(l, opts) {
+    var p = pos(l.id), f = fait(l.id), km = moi && p ? distance(moi, p) : null;
+    var plan = p ? '<a href="https://maps.apple.com/?daddr=' + p.lat + "," + p.lon + '&dirflg=w" target="_blank" rel="noopener">Directions</a>' : "";
+    return '<li class="' + (f ? "fait" : "") + (opts.proche ? " proche" : "") + '">' +
+      '<input type="checkbox" data-sp-fait="' + l.id + '"' + (f ? " checked" : "") + ' aria-label="Done: ' + echap(l.nom) + '">' +
+      "<div><div class=\"sp-nom\">" + echap(l.nom) + (opts.badge ? '<span class="sp-badge">' + opts.badge + "</span>" : "") + "</div>" +
+      '<div class="sp-meta">' + echap([l.type, l.quartier || l.arr].filter(Boolean).join(" · ")) + (km != null ? " · " + aPied(km) : "") + "</div>" +
+      '<div class="sp-actions">' + plan + '<button type="button" data-sp-fiche="' + l.id + '">Details</button></div></div>' +
+      direction(p) + "</li>";
+  }
+  function rendre() {
+    var html = "";
+    if (vue === "liste") {
+      var sel = (etat.selection || []).filter(function (x) { return parId[x.id]; });
+      if (!sel.length) { corps.innerHTML = '<p class="sp-vide">Your notebook is empty. Pick places in the app first, they will show here as a checklist.</p>'; return; }
+      var n = sel.filter(function (x) { return fait(x.id); }).length;
+      html += '<p class="sp-avance">' + n + " of " + sel.length + " done</p><div class=\"sp-barre\"><i style=\"width:" + Math.round(n / sel.length * 100) + '%"></i></div>';
+      var restants = sel.filter(function (x) { return !fait(x.id) && pos(x.id); }), plusProche = null;
+      if (moi && restants.length) plusProche = restants.reduce(function (a, b) { return distance(moi, pos(a.id)) <= distance(moi, pos(b.id)) ? a : b; }).id;
+      ["lun", "mar", "mer", "ap"].forEach(function (j) {
+        var du = sel.filter(function (x) { return (x.day || "ap") === j; });
+        if (!du.length) return;
+        du.sort(function (a, b) { return fait(a.id) - fait(b.id); });
+        html += '<h3 class="sp-jour">' + JOURS_SP[j] + '</h3><ul class="sp-liste">' + du.map(function (x) {
+          var l = parId[x.id];
+          return ligneLieu(l, { proche: x.id === plusProche, badge: x.id === plusProche ? "Nearest" : (x.niveau === "must" ? "Must-do" : "") });
+        }).join("") + "</ul>";
+      });
+    } else {
+      if (!moi) { corps.innerHTML = '<p class="sp-vide">Waiting for your location to sort the places around you…</p>'; return; }
+      var dans = {}; (etat.selection || []).forEach(function (x) { dans[x.id] = true; });
+      var tous = LIEUX.filter(function (l) { return pos(l.id); }).map(function (l) { return { l: l, km: distance(moi, pos(l.id)) }; })
+        .sort(function (a, b) { return a.km - b.km; }).slice(0, 25);
+      html += '<ul class="sp-liste">' + tous.map(function (t) { return ligneLieu(t.l, { badge: dans[t.l.id] ? "In notebook" : "" }); }).join("") + "</ul>";
+      html += '<p class="sp-vide">The 25 closest places from the whole list. Distances are as the crow flies, walking times are estimates.</p>';
+    }
+    corps.innerHTML = html;
+  }
+  function tournerFleches() { // la boussole bouge souvent : on ne tourne que les flèches
+    if (cap == null) return;
+    corps.querySelectorAll(".sp-fleche").forEach(function (f) { f.style.transform = "rotate(" + (parseFloat(f.dataset.az) - cap).toFixed(0) + "deg)"; });
+  }
+  function texteLigne(msg) {
+    ligne.innerHTML = msg + (boussole || !window.DeviceOrientationEvent ? "" : ' · <button type="button" id="sp-boussole">Point arrows with the compass</button>');
+  }
+  function demarrer() {
+    if (suivi != null || !navigator.geolocation) { if (!navigator.geolocation) texteLigne("Location is not available on this device."); return; }
+    texteLigne("Finding your location…");
+    suivi = navigator.geolocation.watchPosition(function (p) {
+      var premier = !moi; moi = { lat: p.coords.latitude, lon: p.coords.longitude };
+      texteLigne("Location found (± " + Math.round(p.coords.accuracy) + " m)." + (cap == null ? " Arrows point north-up." : ""));
+      if (premier || !panneau.hidden) rendre();
+    }, function (e) {
+      texteLigne(e.code === 1 ? "Location refused. To allow it: Settings › Privacy & Security › Location Services › Safari Websites › While Using." : "Location unavailable for now.");
+      suivi = null;
+    }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+  }
+  function ecouterBoussole() {
+    window.addEventListener("deviceorientation", function (e) {
+      var h = e.webkitCompassHeading != null ? e.webkitCompassHeading : (e.absolute && e.alpha != null ? 360 - e.alpha : null);
+      if (h == null) return;
+      var premier = cap == null; cap = h; boussole = true;
+      if (premier) rendre(); else tournerFleches();
+    });
+  }
+  document.getElementById("sp-ouvrir").addEventListener("click", function () {
+    panneau.hidden = false; document.documentElement.style.overflow = "hidden"; rendre(); demarrer();
+  });
+  document.getElementById("sp-fermer").addEventListener("click", function () { panneau.hidden = true; document.documentElement.style.overflow = ""; });
+  panneau.addEventListener("click", function (e) {
+    var o = e.target.closest("[data-sp-vue]");
+    if (o) { vue = o.dataset.spVue; panneau.querySelectorAll("[data-sp-vue]").forEach(function (b) { b.setAttribute("aria-selected", b === o); }); rendre(); return; }
+    var f = e.target.closest("[data-sp-fiche]");
+    if (f) { panneau.hidden = true; document.documentElement.style.overflow = ""; location.hash = "#lieu-" + f.dataset.spFiche; return; }
+    if (e.target.id === "sp-boussole") {
+      var D = window.DeviceOrientationEvent;
+      if (D && typeof D.requestPermission === "function") D.requestPermission().then(function (r) { if (r === "granted") ecouterBoussole(); }).catch(function () {});
+      else ecouterBoussole();
+      boussole = true; e.target.remove();
+    }
+  });
+  panneau.addEventListener("change", function (e) {
+    var c = e.target.closest("[data-sp-fait]");
+    if (c) { cocher(c.dataset.spFait, c.checked); setTimeout(rendre, 250); }
+  });
+})();
+</script>
 </body>
 </html>
