@@ -63,7 +63,7 @@
   --gutter-r: max(16px, env(safe-area-inset-right, 0px));
   /* teintes des fonds de remplacement, par thème */
   --t-resto: #5e2d2a; --t-cafe: #6b4f35; --t-musee: #2f4657; --t-balade: #35554a;
-  --t-artisan: #5b5143; --t-shopping: #3b3f5a; --t-noel: #1f4c8f; --t-rdv: #2a6f6f;
+  --t-artisan: #5b5143; --t-shopping: #3b3f5a; --t-noel: #1f4c8f; --t-rdv: #2a6f6f; --t-rues: #5e5b2a;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -173,6 +173,8 @@ body.vue-programme #adresses, body.vue-programme #carte { display: none; }
 .pe-fixe b, .pe-heure b { color: var(--email); font-variant-numeric: tabular-nums; font-weight: 600; }
 .pe-trajet { margin-left: 30px; padding: 6px 0 6px 46px; border-left: 2px dotted var(--zinc); font-size: .8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 14px; }
 .pe-trajet em { font-style: normal; color: var(--laiton); }
+.via-rues { flex-basis: 100%; display: block; color: #cfc98a; font-size: .8rem; margin-top: 2px; }
+.via-rues .nom-lien { color: #e4dd9a; font-weight: 600; }
 .pe-lieu { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 6px 0; }
 .pe-heure { display: flex; flex-direction: column; font-size: .8rem; color: var(--muted); padding-top: 4px; }
 .pe-heure b { font-size: 1rem; }
@@ -1209,11 +1211,12 @@ footer { background: rgba(8, 13, 20, .92); }
     <p><strong>Notebook on another device</strong> · Your choices and expenses are saved on this device only. To copy them to your iPhone (or back to the computer), send yourself this link and open it on the other device.</p>
     <p><button type="button" class="btn" id="app-lien">Send my notebook</button> <button type="button" class="btn" id="app-recevoir">Paste a notebook link</button> <span id="app-lien-statut" role="status"></span></p>
     <p id="app-horsligne" role="status">Offline mode: preparing…</p>
+    <p><button type="button" class="btn" id="app-reparer">Reload photos and maps</button> <span class="app-aide">if a map or photo does not show</span></p>
   </div>
   <style>
     .app-transfert { padding-block: 0 34px !important; }
     .app-transfert .btn { color: #eef1f3; border-color: #d6a84e; }
-    #app-horsligne { font-size: .78rem; opacity: .8; }
+    #app-horsligne, .app-aide { font-size: .78rem; opacity: .8; }
   </style>
   <script>
   (function () {
@@ -1239,22 +1242,31 @@ footer { background: rgba(8, 13, 20, .92); }
       location.replace(location.pathname + "#carnet=" + m[1]);
       location.reload();
     });
+    // Vide la copie hors connexion et repart de zéro (le carnet, gardé à part, n'est pas touché).
+    document.getElementById("app-reparer").addEventListener("click", function () {
+      if (!confirm("Delete the offline copy and download all photos and maps again? Your notebook is kept.")) return;
+      var fin = function () { location.reload(); };
+      Promise.all([
+        window.caches ? caches.keys().then(function (k) { return Promise.all(k.map(function (c) { return caches.delete(c); })); }) : null,
+        navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function (r) { return Promise.all(r.map(function (x) { return x.unregister(); })); }) : null
+      ]).then(fin, fin);
+    });
     var info = document.getElementById("app-horsligne");
     if (!("serviceWorker" in navigator)) { info.textContent = "Offline mode is not available in this browser."; return; }
     navigator.serviceWorker.register("sw.js").catch(function () { info.textContent = "Offline mode could not start."; });
     function compter() {
       if (!window.caches) return;
       caches.keys().then(function (cles) {
-        var cle = cles.filter(function (c) { return c.indexOf("carnet-") === 0; }).sort().pop();
+        var cle = window.__cacheSW && cles.indexOf(window.__cacheSW) >= 0 ? window.__cacheSW : null;
         if (!cle) { info.textContent = "Offline mode: preparing…"; return setTimeout(compter, 3000); }
         caches.open(cle).then(function (c) { return c.keys(); }).then(function (r) {
-          var n = r.filter(function (q) { return /\.jpg$/.test(q.url); }).length, total = window.__totalMedias || 0;
+          var n = r.filter(function (q) { return /\.jpg(\?|$)/.test(q.url); }).length, total = window.__totalMedias || 0;
           if (total && n >= total) info.textContent = "Offline mode ready: every page, photo and map is saved on this device.";
           else { info.textContent = "Offline mode: saving photos and maps (" + n + (total ? " / " + total : "") + ")… keep the app open on Wi-Fi."; setTimeout(compter, 3000); }
         });
       });
     }
-    navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.total) window.__totalMedias = e.data.total; });
+    navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.total) { window.__totalMedias = e.data.total; window.__cacheSW = e.data.cache; } });
     navigator.serviceWorker.ready.then(function (r) { if (r.active) r.active.postMessage("total"); compter(); });
   })();
   </script>
@@ -1292,6 +1304,7 @@ const THEMES = [
   { cle: "balade",   titre: "Walks",                ancre: "balades",     intro: "On foot, from gardens to covered passages, with a long detour through Montmartre." },
   { cle: "artisan",  titre: "Shops & craftspeople",   ancre: "artisans",    intro: "Historic houses and craftsmanship: chocolatiers, chef’s kitchenware, curiosities." },
   { cle: "shopping", titre: "Shopping",               ancre: "shopping",    intro: "Department stores, passages and fine food stores for Christmas gifts." },
+  { cle: "rues",     titre: "Streets & passages",     ancre: "rues",        intro: "Quiet streets, hidden passages and secret gardens to walk through between two visits: when one is on your way, My itinerary suggests the detour." },
   { cle: "noel",     titre: "Christmas spirit",         ancre: "noel",        intro: "Markets, ice rinks, shop windows and December lights." }
 ];
 
@@ -1757,6 +1770,27 @@ const LIEUX = [
   { id: "ancre", article: {"titre": "Paris je t’aime", "url": "https://parisjetaime.com/article/chatelet-et-le-marais-paris-a923"}, repere: "Walk: Châtelet, Les Halles and Beaubourg", theme: "balade", type: "Passage", nom: "Passage de l’Ancre", arr: "3rd", quartier: "Arts-et-Métiers", metro: "Réaumur-Sébastopol / Étienne Marcel", adresse: "Between 223 rue Saint-Martin and 30 rue de Turbigo, 75003",
     desc: "Hidden cobbled alley with old shopfronts and flower boxes; easy to miss from the street.", duree: 10, budget: "Free", prix: "", moments: ["matin", "aprem"],
     remarque: "Access hours: to be checked (it may be closed at night).", photo: "", motcle: "Passage de l’Ancre Paris", alt: "Passage de l’Ancre" },
+  { id: "rbar", insta: "https://www.instagram.com/reel/DfTSZo8gIFh/", repere: "@etiquetteinparis", theme: "rues", type: "Street", nom: "Rue des Barres", arr: "4th", quartier: "Marais", metro: "Pont Marie / Hôtel de Ville", adresse: "Rue des Barres, 75004",
+    desc: "Cobbled lane with old stone walls beside the Saint-Gervais church, one of the most photogenic corners of the Marais.", duree: 10, budget: "Free", prix: "", moments: ["matin", "aprem"],
+    remarque: "", photo: "", motcle: "Rue des Barres Paris", alt: "Rue des Barres" },
+  { id: "rtre", insta: "https://www.instagram.com/reel/DfTSZo8gIFh/", repere: "@etiquetteinparis", theme: "rues", type: "Street", nom: "Rue du Trésor", arr: "4th", quartier: "Marais", metro: "Saint-Paul / Hôtel de Ville", adresse: "Rue du Trésor, off 26 rue Vieille-du-Temple, 75004",
+    desc: "A small dead-end street with leafy corners and café terraces, just off the busy rue Vieille-du-Temple.", duree: 10, budget: "Free", prix: "", moments: ["matin", "aprem"],
+    remarque: "", photo: "", motcle: "Rue du Trésor Paris", alt: "Rue du Trésor" },
+  { id: "jsul", insta: "https://www.instagram.com/reel/DfTSZo8gIFh/", repere: "@etiquetteinparis", theme: "rues", type: "Hidden garden", nom: "Jardin de l’Hôtel de Sully", arr: "4th", quartier: "Marais", metro: "Saint-Paul / Bastille", adresse: "62 rue Saint-Antoine, 75004",
+    desc: "Formal garden and pale stone mansion hidden behind rue Saint-Antoine; a passage at the back leads into the Place des Vosges.", duree: 15, budget: "Free", prix: "", moments: ["matin", "aprem"],
+    remarque: "Opening hours to be checked: Paris gardens usually close around 5 pm in December.", photo: "", motcle: "Jardin de l’Hôtel de Sully Paris", alt: "Jardin de l’Hôtel de Sully" },
+  { id: "jros", insta: "https://www.instagram.com/reel/DfTSZo8gIFh/", repere: "@etiquetteinparis", theme: "rues", type: "Hidden garden", nom: "Jardin des Rosiers – Joseph-Migneret", arr: "4th", quartier: "Marais", metro: "Saint-Paul", adresse: "10 rue des Rosiers, 75004",
+    desc: "Leafy garden tucked between old mansions, just off rue des Rosiers.", duree: 15, budget: "Free", prix: "", moments: ["matin", "aprem"],
+    remarque: "Opening hours to be checked: Paris gardens usually close around 5 pm in December.", photo: "", motcle: "Jardin des Rosiers – Joseph-Migneret Paris", alt: "Jardin des Rosiers – Joseph-Migneret" },
+  { id: "sgil", insta: "https://www.instagram.com/reel/DfTSZo8gIFh/", repere: "@etiquetteinparis", theme: "rues", type: "Hidden garden", nom: "Square Saint-Gilles-Grand-Veneur – Pauline-Roland", arr: "3rd", quartier: "Marais", metro: "Chemin Vert / Saint-Sébastien–Froissart", adresse: "9 rue du Grand-Veneur, 75003",
+    desc: "Climbing roses and stone benches in a garden behind the main streets.", duree: 15, budget: "Free", prix: "", moments: ["matin", "aprem"],
+    remarque: "Opening hours to be checked: Paris gardens usually close around 5 pm in December.", photo: "", motcle: "Square Saint-Gilles-Grand-Veneur – Pauline-Roland Paris", alt: "Square Saint-Gilles-Grand-Veneur – Pauline-Roland" },
+  { id: "scai", insta: "https://www.instagram.com/reel/DfTSZo8gIFh/", repere: "@etiquetteinparis", theme: "rues", type: "Hidden garden", nom: "Square Georges-Cain", arr: "3rd", quartier: "Marais", metro: "Saint-Paul / Chemin Vert", adresse: "8 rue Payenne, 75003",
+    desc: "Old carved stonework among the trees makes this garden feel like an outdoor museum, next to the Musée Carnavalet.", duree: 15, budget: "Free", prix: "", moments: ["matin", "aprem"],
+    remarque: "Opening hours to be checked: Paris gardens usually close around 5 pm in December.", photo: "", motcle: "Square Georges-Cain Paris", alt: "Square Georges-Cain" },
+  { id: "jsen", insta: "https://www.instagram.com/reel/DfTSZo8gIFh/", repere: "@etiquetteinparis", theme: "rues", type: "Hidden garden", nom: "Jardin de l’Hôtel de Sens", arr: "4th", quartier: "Marais", metro: "Pont Marie / Saint-Paul", adresse: "1 rue du Figuier, 75004",
+    desc: "Neat formal beds beneath the pointed turrets of the medieval Hôtel de Sens.", duree: 15, budget: "Free", prix: "", moments: ["matin", "aprem"],
+    remarque: "Opening hours to be checked: Paris gardens usually close around 5 pm in December.", photo: "", motcle: "Jardin de l’Hôtel de Sens Paris", alt: "Jardin de l’Hôtel de Sens" },
   { id: "innoc", article: {"titre": "Paris je t’aime", "url": "https://parisjetaime.com/article/chatelet-et-le-marais-paris-a923"}, repere: "Walk: Châtelet, Les Halles and Beaubourg", theme: "balade", type: "Square", nom: "Fontaine des Innocents and Les Halles", arr: "1st", quartier: "Les Halles", metro: "Les Halles / Châtelet", adresse: "Place Joachim-du-Bellay, 75001",
     desc: "Renaissance fountain on the site of the old Innocents cemetery, then the Forum des Halles under its large canopy and the Nelson-Mandela garden.", duree: 20, budget: "Free", prix: "", moments: ["matin", "aprem", "soir"],
     remarque: "", photo: "", motcle: "Fontaine des Innocents and Les Halles Paris", alt: "Fontaine des Innocents and Les Halles" },
@@ -1844,7 +1878,7 @@ const VISUELS = {"b1":{"photos":[{"src":"img/b1_cov.jpg","alt":"Au Pied de Cocho
 const CLE_STOCKAGE = "carnet-paris-2026";
 const MOMENTS = [["matin", "Morning"], ["midi", "Lunch"], ["aprem", "Afternoon"], ["soir", "Evening"]];
 const JOURS = [["lun", "Mon 14"], ["mar", "Tue 15"], ["mer", "Wed 16"], ["ap", "To place"]];
-const TEINTES = { rdv: "--t-rdv", resto: "--t-resto", cafe: "--t-cafe", musee: "--t-musee", balade: "--t-balade", artisan: "--t-artisan", shopping: "--t-shopping", noel: "--t-noel" };
+const TEINTES = { rues: "--t-rues", rdv: "--t-rdv", resto: "--t-resto", cafe: "--t-cafe", musee: "--t-musee", balade: "--t-balade", artisan: "--t-artisan", shopping: "--t-shopping", noel: "--t-noel" };
 // Uniquement Paris intra-muros : La Défense (p3) et Vaux-le-Vicomte (p4) sont retirées.
 const HORS_PARIS = ["p3", "p4", "ls5", "ls6", "m13", "ls2", "m9", "m12"];
 LIEUX.splice(0, LIEUX.length, ...LIEUX.filter(l => !HORS_PARIS.includes(l.id)));
@@ -1882,7 +1916,7 @@ function rendreAdresses() {
       <div class="theme-head"><span class="num">${String(i + 1).padStart(2, "0")}</span><h2 id="h-${t.ancre}">${t.titre}</h2><p>${t.intro}</p></div>
       ${grilleTheme(t, lieux)}</section>`;
   }).join("");
-  nav.innerHTML = `<li><a href="#programme" class="vers-programme">My itinerary</a></li><li><a href="#depenses" class="vers-depenses">Expenses</a></li><li><a href="#carte" class="vers-carte">The map</a></li><li><a href="#circuits" class="vers-circuits">Walking routes</a></li><li><a href="#booke" class="vers-booke">✓ Already booked</a></li><li><a href="#autour" class="vers-autour">📍 Around me</a></li>` + ["noel", "balade", "musee", "resto", "cafe", "artisan", "shopping"].map(c => THEMES.find(t => t.cle === c)).filter(Boolean).map(t => `<li><a href="#${t.ancre}" data-ancre="${t.ancre}">${t.titre}<span class="n">${LIEUX.filter(l => l.theme === t.cle).length}</span></a></li>`).join("");
+  nav.innerHTML = `<li><a href="#programme" class="vers-programme">My itinerary</a></li><li><a href="#depenses" class="vers-depenses">Expenses</a></li><li><a href="#carte" class="vers-carte">The map</a></li><li><a href="#circuits" class="vers-circuits">Walking routes</a></li><li><a href="#booke" class="vers-booke">✓ Already booked</a></li><li><a href="#autour" class="vers-autour">📍 Around me</a></li>` + ["noel", "balade", "rues", "musee", "resto", "cafe", "artisan", "shopping"].map(c => THEMES.find(t => t.cle === c)).filter(Boolean).map(t => `<li><a href="#${t.ancre}" data-ancre="${t.ancre}">${t.titre}<span class="n">${LIEUX.filter(l => l.theme === t.cle).length}</span></a></li>`).join("");
   main.querySelectorAll(".photo img").forEach(img => {
     const fig = img.closest(".photo");
     const ok = () => fig.classList.add("ok");
@@ -2023,7 +2057,7 @@ function changerNiveau(id, n) {
 
 /* Visiter ou seulement voir en passant (façade, monument, vitrine, point de vue) :
    en passant, quelques minutes sur le trajet au lieu d'un vrai temps de visite. */
-const PASSE_DEFAUT = new Set(["bouq", "l28e", "l28a", "l28f", "l26", "v1", "m1", "m2", "m3", "m4", "m6", "m7", "m12", "m13", "ls2", "ls3", "ls4", "ls5", "ls6", "pa3", "bir", "tro", "vend", "dau", "hdv", "mont", "fsh", "vroy", "mbar", "jouf", "pano", "viv", "ccsa", "pv", "l28i", "chat", "tsj", "pomp", "flam", "ancre", "innoc", "pneuf", "pchg"]);
+const PASSE_DEFAUT = new Set(["rbar", "rtre", "bouq", "l28e", "l28a", "l28f", "l26", "v1", "m1", "m2", "m3", "m4", "m6", "m7", "m12", "m13", "ls2", "ls3", "ls4", "ls5", "ls6", "pa3", "bir", "tro", "vend", "dau", "hdv", "mont", "fsh", "vroy", "mbar", "jouf", "pano", "viv", "ccsa", "pv", "l28i", "chat", "tsj", "pomp", "flam", "ancre", "innoc", "pneuf", "pchg"]);
 const DUREE_PASSE = 10;
 const vueFixe = id => { const l = parId[id]; return !l || !!HEURES_FIXES[id] || l.theme === "resto" || l.theme === "cafe"; };
 const vueDefaut = id => PASSE_DEFAUT.has(id) ? "passe" : "visite";
@@ -2084,7 +2118,7 @@ majFixes();
    nuit = illuminations, à voir à partir de 17 h ; couchant = soleil bas, à partir de 16 h ; jour = avant la tombée de la nuit. */
 const EPHEMERIDES = { lun: { lever: H(8, 36), coucher: H(16, 53) }, mar: { lever: H(8, 37), coucher: H(16, 54) }, mer: { lever: H(8, 38), coucher: H(16, 54) } };
 const HEURE_NUIT = H(17, 0), HEURE_COUCHANT = H(16, 0);
-const LUMIERE = { mont: "nuit", l28i: "nuit", vroy: "nuit", mbar: "nuit", vend: "nuit", fsh: "nuit", l13: "nuit", fee: "nuit", l2: "nuit", l14: "nuit", l11: "nuit", tro: "nuit", l5: "couchant", arc: "couchant", bouq: "jour" };
+const LUMIERE = { jsul: "jour", jros: "jour", sgil: "jour", scai: "jour", jsen: "jour", mont: "nuit", l28i: "nuit", vroy: "nuit", mbar: "nuit", vend: "nuit", fsh: "nuit", l13: "nuit", fee: "nuit", l2: "nuit", l14: "nuit", l11: "nuit", tro: "nuit", l5: "couchant", arc: "couchant", bouq: "jour" };
 const lumiereDe = id => { try { return LUMIERE[id] || ""; } catch (e) { return ""; } };
 const heureLumiere = id => lumiereDe(id) === "nuit" ? HEURE_NUIT : lumiereDe(id) === "couchant" ? HEURE_COUCHANT : 0;
 const TEXTE_LUMIERE = { nuit: ["🌙", "After dark", "best from 5 pm, once the lights are on (sunset 4:54 pm)"], couchant: ["🌅", "Low sun", "best from 4 pm, as the sun sets (sunset 4:54 pm)"], jour: ["☀️", "Daylight", "before nightfall (sunset 4:54 pm)"] };
@@ -2310,6 +2344,20 @@ function itinGareHtml(e) {
     return `<span class="itin-gare"><b>Metro:</b> ${metro}<br><b>Taxi:</b> ${taxi}<br><a href="${g}" target="_blank" rel="noopener">See the route in Google Maps</a> · lines and times to be checked on the day.</span>`;
   } catch (err) { return ""; }
 }
+/* Rues et passages (4/11) : sur un trajet à pied, proposer de passer par une rue ou un jardin de la section quand le détour est court. */
+const DETOUR_RUES_MIN = 4;
+function viaRues(e) {
+  try {
+    const t = e.tr; if (!t || !t.apied) return [];
+    const a = point(e.de), b = point(e.vers); if (!a || !b) return [];
+    const dejaJour = new Set(etat.selection.filter(x => JOURS_SEJOUR.includes(x.day)).map(x => x.id));
+    const kv = (p, q) => { const dLat = (q.lat - p.lat) * 111.2, dLon = (q.lon - p.lon) * 111.2 * Math.cos(p.lat * Math.PI / 180); return Math.hypot(dLat, dLon) * 1.3; };
+    return LIEUX.filter(l => l.theme === "rues" && !dejaJour.has(l.id) && l.id !== e.de && l.id !== e.vers).map(l => { const x = positionDe(l.id); if (!x) return null;
+      const plus = (kv(a, x) + kv(x, b) - kv(a, b)) / 4.5 * 60; return { l, min: Math.max(0, Math.round(plus)) }; })
+      .filter(v => v && v.min <= DETOUR_RUES_MIN).sort((p, q) => p.min - q.min).slice(0, 2);
+  } catch (_) { return []; }
+}
+const viaRuesHtml = e => { const v = viaRues(e); return v.length ? `<span class="via-rues">🚶 On the way, walk through ${v.map(x => `<button type="button" class="nom-lien" data-fiche="${x.l.id}">${esc(x.l.nom)}</button> (${x.min ? `+${x.min} min` : "no detour"})`).join(" or ")}</span>` : ""; };
 function trajetHtml(e) {
   const t = e.tr, note = e.note ? ` · ${e.note}` : "";
   if (!t) return `<li class="trajet">Journey to be estimated (imprecise address)${note}</li>`;
@@ -2317,7 +2365,7 @@ function trajetHtml(e) {
   const metro = `<span class="opt${m ? " choisi" : ""}"><span class="mode">${t.apied ? "On foot" : "Metro + walk"}</span><b>${t.metro} min</b><i>${t.apied ? "free" : `2 tickets ${eur(t.metroEur)}`}</i></span>`;
   const taxi = `<span class="opt${m ? "" : " choisi"}"><span class="mode">Taxi</span><b>${t.taxiMin} min</b><i>~€${t.taxiEur}</i></span>`;
   const marche = marcheUtile(t, e.de, e.vers) ? `<span class="opt info"><span class="mode">Walk</span><b>${duree(t.marche)}</b><i>free, ${t.km.toFixed(1)} km</i></span>` : "";
-  return `<li class="trajet"><span class="trajet-lbl">Journey${e.note ? ` <em>· ${e.note}</em>` : ""}</span><span class="opts">${metro}${taxi}${marche}</span>${itinGareHtml(e)}</li>`;
+  return `<li class="trajet"><span class="trajet-lbl">Journey${e.note ? ` <em>· ${e.note}</em>` : ""}</span><span class="opts">${metro}${taxi}${marche}</span>${viaRuesHtml(e)}${itinGareHtml(e)}</li>`;
 }
 function totalJour(k) { return etat.selection.filter(x => x.day === k).reduce((s, x) => s + parId[x.id].duree, 0); }
 function ctrlLieu(l, k) {
@@ -3041,9 +3089,10 @@ window.addEventListener("hashchange", lireHash);
    CARTE — fond assemblé à partir des tuiles OpenStreetMap (zoom 14).
    Les positions viennent de VISUELS (lat, lon) et de GEO pour les autres.
    ===================================================================== */
-const TEINTES_CARTE = { rdv: "#2a6f6f", resto: "#b0413e", cafe: "#a8743a", musee: "#2f6fa3", balade: "#3d8a5c", artisan: "#7a5c3a", shopping: "#7b4fa0", noel: "#d6a84e" };
+const TEINTES_CARTE = { rues: "#8e8a3a", rdv: "#2a6f6f", resto: "#b0413e", cafe: "#a8743a", musee: "#2f6fa3", balade: "#3d8a5c", artisan: "#7a5c3a", shopping: "#7b4fa0", noel: "#d6a84e" };
 const FOND = { z: 14, x0: 8293, y0: 5633, nx: 12, ny: 7 };
 const GEO = {"l14": {"lat": 48.864126, "lon": 2.306229}, "gde": {"lat": 48.877098, "lon": 2.359491}, "m13": {"lat": 48.8847, "lon": 2.3385}, "p3": {"lat": 48.892, "lon": 2.238}};
+Object.assign(GEO, { rbar: { lat: 48.8552, lon: 2.3553 }, rtre: { lat: 48.85715, lon: 2.35764 }, jsul: { lat: 48.8549, lon: 2.3642 }, jros: { lat: 48.85729, lon: 2.36025 }, sgil: { lat: 48.85923, lon: 2.36534 }, scai: { lat: 48.85805, lon: 2.36275 }, jsen: { lat: 48.85361, lon: 2.35854 } });
 const REPERES_SPECIAUX = [{"id": "exe", "nom": "Charlot Studio (your accommodation)", "detail": "Your studio · 32 rue Charlot, 3rd · metro Filles du Calvaire", "lettre": "H", "classe": "", "lat": 48.8627, "lon": 2.3627}, {"id": "gmp", "nom": "Gare Montparnasse", "detail": "Arrival and departure of the Rennes trains", "lettre": "M", "classe": "gare", "lat": 48.8400624, "lon": 2.3191085}];
 function versCarte(lat, lon) {
   const n = 2 ** FOND.z;
@@ -4592,7 +4641,7 @@ function rendreProgramme() {
         ${itinHtml(k, p)}
         <ol class="prog-etapes">${p.etapes.map(e => {
           if (e.type === "fixe") return `<li class="pe-fixe"><b>${heure(e.debut)}</b><span>${e.txt}</span></li>`;
-          if (e.type === "trajet") { const t = e.tr; return `<li class="pe-trajet">${t ? `<span>${t.apied ? `On foot, ${t.metro} min, free` : `Metro + walk, ${t.metro} min, 2 tickets ${eur(t.metroEur)}`}</span><span>Taxi, ${t.taxiMin} min, ~€${t.taxiEur}</span>${marcheUtile(t, e.de, e.vers) ? `<span>Walk, ${duree(t.marche)} (${t.km.toFixed(1)} km)</span>` : ""}` : `<span>Journey to be estimated</span>`}${e.note ? `<em>${e.note}</em>` : ""}${itinGareHtml(e)}</li>`; }
+          if (e.type === "trajet") { const t = e.tr; return `<li class="pe-trajet">${t ? `<span>${t.apied ? `On foot, ${t.metro} min, free` : `Metro + walk, ${t.metro} min, 2 tickets ${eur(t.metroEur)}`}</span><span>Taxi, ${t.taxiMin} min, ~€${t.taxiEur}</span>${marcheUtile(t, e.de, e.vers) ? `<span>Walk, ${duree(t.marche)} (${t.km.toFixed(1)} km)</span>` : ""}` : `<span>Journey to be estimated</span>`}${e.note ? `<em>${e.note}</em>` : ""}${viaRuesHtml(e)}${itinGareHtml(e)}</li>`; }
           const l = e.l, ph = photosDe(l)[0];
           return `<li class="pe-lieu" style="--c:${TEINTES_CARTE[l.theme]}">
             <div class="pe-heure"><b>${heure(e.debut)}</b><span>${duree(e.duree)}</span></div>
