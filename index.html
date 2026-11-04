@@ -1103,7 +1103,7 @@ footer { background: rgba(8, 13, 20, .92); }
     <div class="aut-barre">
       <label class="aut-case" style="--c:#a8743a"><input type="checkbox" data-aut-theme="cafe" checked> <i></i>Cafés &amp; pastries</label>
       <label class="aut-case" style="--c:#b0413e"><input type="checkbox" data-aut-theme="resto" checked> <i></i>Restaurants</label>
-      <button type="button" class="btn plein" id="aut-moi">📍 Find me</button>
+      <button type="button" class="btn plein" id="aut-moi">📍 Centre on me</button>
     </div>
     <p class="aut-etat" id="aut-etat" aria-live="polite"></p>
     <div class="aut-corps"><div class="circ-carte aut-carte zc" id="aut-carte"></div><div class="aut-liste-cadre"><p class="circ-liste-titre" id="aut-liste-titre">Nearest</p><ol class="aut-liste" id="aut-liste"></ol></div></div>
@@ -3971,7 +3971,7 @@ try { (function () {
 
 /* ---------- Around me (demande du 4/11) : position de l'appareil + cafés/pâtisseries et restaurants de notre liste, les plus proches d'abord.
    Isolé : une erreur ici n'affecte rien d'autre. Sans géolocalisation (refus, page sans permission), on touche la carte pour dire où on est. ---------- */
-const AUT = { moi: null, precision: 0, source: "", suivi: null, centre: false, themes: null };
+const AUT = { geo: null, refus: false, moi: null, precision: 0, source: "", suivi: null, centre: false, themes: null };
 function autThemes() { if (!AUT.themes) { let t = null; try { t = JSON.parse(localStorage.getItem("carnet-autour-themes")); } catch (_) {} AUT.themes = Array.isArray(t) ? t : ["cafe", "resto"]; } return AUT.themes; }
 function autCadre(q, kmLarg) { const k = kmParUnite(), W0 = FOND.nx * 256, H0 = FOND.ny * 256, w = kmLarg / k, hh = w / 1.15; return { x: Math.max(0, Math.min(W0 - w, q.x - w / 2)), y: Math.max(0, Math.min(H0 - hh, q.y - hh / 2)), w, h: hh }; }
 function autStudio() { const h = REPERES_SPECIAUX.find(x => x.id === "exe"), v = versCarte(h.lat, h.lon); return { x: v.x / 100 * FOND.nx * 256, y: v.y / 100 * FOND.ny * 256 }; }
@@ -3983,52 +3983,59 @@ function autMoiSvg(u) {
 function rendreAutour(garderVue) {
   const zone = document.getElementById("aut-carte"), liste = document.getElementById("aut-liste"); if (!zone || !liste) return;
   const th = autThemes(); document.querySelectorAll("[data-aut-theme]").forEach(i => { i.checked = th.includes(i.dataset.autTheme); });
-  const W0 = FOND.nx * 256, H0 = FOND.ny * 256, ref = AUT.moi || autStudio();
+  // 4/11 : tout est mesuré depuis la position réelle du téléphone (AUT.geo), jamais depuis l'hôtel ; la carte suit si on est sur le plan
+  const W0 = FOND.nx * 256, H0 = FOND.ny * 256, ref = AUT.moi || { x: W0 * 0.52, y: H0 * 0.5 };
   const ancien = zone.querySelector("svg.zc-svg");
-  const vb = garderVue && ancien ? (() => { const [x, y, w, hh] = ancien.getAttribute("viewBox").split(/\s+/).map(Number); return { x, y, w, h: hh }; })() : autCadre(ref, 1.8);
+  let vb = garderVue && ancien ? (() => { const [x, y, w, hh] = ancien.getAttribute("viewBox").split(/\s+/).map(Number); return { x, y, w, h: hh }; })() : autCadre(ref, AUT.moi ? 1.8 : 7);
+  // la carte suit : si le point bleu sort du centre de la vue, on recentre sans changer le zoom
+  if (garderVue && AUT.moi && AUT.source === "gps" && (AUT.moi.x < vb.x + vb.w * 0.2 || AUT.moi.x > vb.x + vb.w * 0.8 || AUT.moi.y < vb.y + vb.h * 0.2 || AUT.moi.y > vb.y + vb.h * 0.8)) vb = { ...vb, x: AUT.moi.x - vb.w / 2, y: AUT.moi.y - vb.h / 2 };
   const vb0 = garderVue && ancien ? JSON.parse(ancien.dataset.vb0) : vb;
   const u = vb0.w / 560 * (innerWidth < 700 ? 1.35 : 1), k = kmParUnite(), carnet = new Set(etat.selection.map(x => x.id));
-  const lieux = LIEUX.filter(l => th.includes(l.theme)).map(l => { const q = xyLieu(l.id); return q && { l, q, km: Math.hypot(q.x - ref.x, q.y - ref.y) * k, nb: carnet.has(l.id) }; }).filter(Boolean).sort((a, b) => a.km - b.km);
+  const g0 = AUT.geo;
+  const lieux = LIEUX.filter(l => th.includes(l.theme)).map(l => { const q = xyLieu(l.id), p = positionDe(l.id); return q && p && { l, q, km: g0 ? kmVol(g0, p) : null, nb: carnet.has(l.id) }; }).filter(Boolean).sort((a, b) => g0 ? a.km - b.km : a.l.nom.localeCompare(b.l.nom));
   let svg = `<svg class="zc-svg" data-vb0='${JSON.stringify(vb0)}' data-w0="${W0}" data-h0="${H0}" viewBox="${vb.x.toFixed(0)} ${vb.y.toFixed(0)} ${vb.w.toFixed(0)} ${vb.h.toFixed(0)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map around you"><image class="fond" href="carte/paris.jpg" x="0" y="0" width="${W0}" height="${H0}" preserveAspectRatio="none"/>`;
   svg += svgLogement(u);
   lieux.slice().reverse().forEach(f => { const r = (f.nb ? 9 : 7.5) * u;
-    svg += `<g class="pt-a" data-fiche-svg="${f.l.id}" data-x="${f.q.x.toFixed(1)}" data-y="${f.q.y.toFixed(1)}"><title>${esc(f.l.nom)} · ${Math.max(1, Math.round(f.km * 1.3 / 4.5 * 60))} min on foot${f.nb ? " · in your notebook" : ""}</title><circle cx="${f.q.x.toFixed(1)}" cy="${f.q.y.toFixed(1)}" r="${r.toFixed(1)}" fill="${TEINTES_CARTE[f.l.theme]}" stroke="#fff" stroke-width="${((f.nb ? 2.2 : 1.6) * u).toFixed(2)}"/></g>`; });
+    svg += `<g class="pt-a" data-fiche-svg="${f.l.id}" data-x="${f.q.x.toFixed(1)}" data-y="${f.q.y.toFixed(1)}"><title>${esc(f.l.nom)}${f.km != null ? ` · ${autDist(f.km)}` : ""}${f.nb ? " · in your notebook" : ""}</title><circle cx="${f.q.x.toFixed(1)}" cy="${f.q.y.toFixed(1)}" r="${r.toFixed(1)}" fill="${TEINTES_CARTE[f.l.theme]}" stroke="#fff" stroke-width="${((f.nb ? 2.2 : 1.6) * u).toFixed(2)}"/></g>`; });
   svg += `<g class="moi-couche">${autMoiSvg(u)}</g></svg>`;
   zone.innerHTML = svg + `<div class="itin-zoom zc-boutons" role="group" aria-label="Zoom the map"><button type="button" data-zc="in" aria-label="Zoom in">+</button><button type="button" data-zc="out" aria-label="Zoom out">−</button><button type="button" data-zc="reset" aria-label="Back to where you are">⌂</button></div>`;
   try { const nsvg = zone.querySelector("svg"), s = vb.w / vb0.w; if (Math.abs(s - 1) > 0.001) nsvg.querySelectorAll("[data-x][data-y]").forEach(g => { const x = +g.dataset.x, y = +g.dataset.y; g.setAttribute("transform", `translate(${x} ${y}) scale(${s.toFixed(4)}) translate(${-x} ${-y})`); }); zone.classList.toggle("zoome", Math.abs(s - 1) > 0.02); } catch (_) {}
   try { poserBasculesMetro(); } catch (_) {}
-  const d = AUT.moi ? (AUT.source === "tap" ? "from the spot you tapped" : "from you") : "from the studio, until we know where you are";
-  document.getElementById("aut-liste-titre").innerHTML = `Nearest, ${d} <span>(on foot through the streets, about ×1.3 the straight line)</span>`;
-  liste.innerHTML = lieux.length ? lieux.slice(0, 25).map(f => { const m = Math.max(1, Math.round(f.km * 1.3 / 4.5 * 60));
-    return `<li style="--c:${TEINTES_CARTE[f.l.theme]}"><i></i><button type="button" class="nom-lien" data-fiche="${f.l.id}">${esc(f.l.nom)}</button><span class="min">${m < 60 ? m + " min" : (f.km * 1.3).toFixed(1) + " km"}</span><small>${esc(f.l.type || "")}${f.l.quartier ? " · " + esc(f.l.quartier) : ""}${f.nb ? " · in your notebook" : ""}</small></li>`; }).join("") : `<li><small>Tick Cafés &amp; pastries or Restaurants above.</small></li>`;
+  document.getElementById("aut-liste-titre").innerHTML = g0 ? `Nearest to ${AUT.source === "tap" ? "the spot you tapped" : "where you are now"} <span>(on foot through the streets, about ×1.3 the straight line)</span>` : `Waiting for your location <span>(the distances appear as soon as your phone gives it)</span>`;
+  liste.innerHTML = lieux.length ? lieux.slice(0, 25).map(f => {
+    return `<li style="--c:${TEINTES_CARTE[f.l.theme]}"><i></i><button type="button" class="nom-lien" data-fiche="${f.l.id}">${esc(f.l.nom)}</button><span class="min">${f.km != null ? autDist(f.km) : ""}</span><small>${esc(f.l.type || "")}${f.l.quartier ? " · " + esc(f.l.quartier) : ""}${f.nb ? " · in your notebook" : ""}</small></li>`; }).join("") : `<li><small>Tick Cafés &amp; pastries or Restaurants above.</small></li>`;
 }
+function kmVol(a, b) { const R = 6371, r = Math.PI / 180, dla = (b.lat - a.lat) * r, dlo = (b.lon - a.lon) * r, h = Math.sin(dla / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dlo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
+function autDist(km) { const m = Math.max(1, Math.round(km * 1.3 / 4.5 * 60)); return km < 4 ? `${m} min on foot` : km < 40 ? `${(km * 1.3).toFixed(1)} km` : `${Math.round(km)} km away`; }
 function autEtat(t) { const e = document.getElementById("aut-etat"); if (e) e.textContent = t; }
 function autPosition(lat, lon, prec) {
-  const v = versCarte(lat, lon);
-  if (!v) { autEtat("You seem to be outside our map of Paris: the list is measured from the studio. Tap the map to place yourself if you like."); AUT.moi = null; rendreAutour(true); return; }
-  const premier = !AUT.moi || AUT.source !== "gps";
+  const v = versCarte(lat, lon), etaitSur = !!AUT.moi && AUT.source === "gps";
+  AUT.geo = { lat, lon }; AUT.precision = prec || 0;
+  if (!v) { const km = kmVol({ lat, lon }, { lat: 48.8566, lon: 2.3522 }); AUT.moi = null; AUT.source = "gps";
+    autEtat(`Located, but you are outside our map of Paris (about ${Math.round(km)} km from the centre). The list is measured from where you really are; the map will follow you once you are in Paris.`); rendreAutour(!!document.querySelector("#aut-carte svg") && !etaitSur); return; }
+  const premier = !etaitSur;
   AUT.moi = { x: v.x / 100 * FOND.nx * 256, y: v.y / 100 * FOND.ny * 256 }; AUT.precision = prec || 0; AUT.source = "gps";
   autEtat(`Located${prec ? ` (to about ${Math.round(prec)} m)` : ""}. The map follows you as you walk; tap a dot to open its card.`);
   rendreAutour(!premier);
 }
 function autLocaliser() {
   try {
-    if (!navigator.geolocation) { autEtat("This browser cannot give your position here: tap the map where you are."); return; }
+    if (!navigator.geolocation) { AUT.refus = true; autEtat("This browser cannot give your position here: tap the map where you are."); return; }
     autEtat("Looking for your position…");
     if (AUT.suivi != null) { try { navigator.geolocation.clearWatch(AUT.suivi); } catch (_) {} }
     AUT.suivi = navigator.geolocation.watchPosition(p => { try { autPosition(p.coords.latitude, p.coords.longitude, p.coords.accuracy); } catch (_) {} },
-      err => { AUT.suivi = null; autEtat(err && err.code === 1 ? "Location is not allowed in this view. Tap the map where you are instead (in the iPhone app, location will be asked for)." : "Position not available right now: tap the map where you are."); },
+      err => { AUT.suivi = null; AUT.refus = true; autEtat(err && err.code === 1 ? "Location is not allowed in this view. Tap the map where you are instead (in the iPhone app, location will be asked for)." : "Position not available right now: tap the map where you are."); },
       { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 });
-  } catch (e) { autEtat("Location is not available here: tap the map where you are."); }
+  } catch (e) { AUT.refus = true; autEtat("Location is not available here: tap the map where you are."); }
 }
 try { (function () {
   document.addEventListener("click", e => {
     try {
-      if (e.target.closest && e.target.closest("#aut-moi")) { autLocaliser(); return; }
+      if (e.target.closest && e.target.closest("#aut-moi")) { if (AUT.suivi != null && AUT.moi) { rendreAutour(false); return; } AUT.refus = false; autLocaliser(); return; }
       const svg = e.target.closest && e.target.closest("#aut-carte svg.zc-svg"); if (!svg || e.target.closest("[data-fiche-svg], [data-ap], .pt-h")) return;
-      if (AUT.source === "gps") return;
       const m = svg.getScreenCTM(); if (!m) return; const q = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
-      AUT.moi = { x: q.x, y: q.y }; AUT.precision = 0; AUT.source = "tap"; autEtat("Placed where you tapped. Tap elsewhere to move it, or “Find me” to use your location."); rendreAutour(true);
+      if (!AUT.refus) return;
+      AUT.moi = { x: q.x, y: q.y }; AUT.geo = deCarte(q.x, q.y); AUT.precision = 0; AUT.source = "tap"; autEtat("Placed where you tapped. Tap elsewhere to move it, or “Centre on me” to try your location again."); rendreAutour(true);
     } catch (_) {}
   });
   document.addEventListener("change", e => {
@@ -4039,7 +4046,8 @@ try { (function () {
     } catch (_) {}
   });
   // « Find me » au premier affichage si la permission est déjà accordée (sans rien demander sinon)
-  window.addEventListener("hashchange", () => { try { if (location.hash === "#autour" && AUT.suivi == null && navigator.permissions) navigator.permissions.query({ name: "geolocation" }).then(r => { if (r.state === "granted") autLocaliser(); }).catch(() => {}); } catch (_) {} });
+  const auto = () => { try { if (location.hash === "#autour" && AUT.suivi == null && !AUT.refus) autLocaliser(); } catch (_) {} };
+  window.addEventListener("hashchange", () => setTimeout(auto, 50)); setTimeout(auto, 600);
 })(); } catch (err) {}
 window.addEventListener("hashchange", afficherVue);
 document.addEventListener("click", e => { try { const a = e.target.closest("[data-vue-lien]"); if (a) setTimeout(() => { const s = document.getElementById("emploi-du-temps"); if (s) window.scrollTo({ top: s.getBoundingClientRect().top + scrollY - 80 }); }, 250); } catch (_) {} }, true);
