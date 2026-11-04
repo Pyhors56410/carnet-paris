@@ -1,5 +1,5 @@
 # Paris Notebook
 
-Planificateur de séjour à Paris, utilisable sans compte. Chaque visiteur règle ses dates, trains, hôtel et photos ; tout reste dans son navigateur.
+Plan a stay in Paris, no account needed. Each visitor sets their dates, trains, hotel and photos; everything stays in their own browser.
 
-Construit depuis le site de Pierre-Yves par site-ami/construire_ami.py (dossier du projet).
+Photos of places: Wikimedia Commons and the places’ own sites (credits on each page). Maps: © OpenStreetMap contributors.
