@@ -1,5 +1,5 @@
-# Paris Notebook
+# Carnet de Paris
 
-Plan a stay in Paris, no account needed. Each visitor sets their dates, trains, hotel and photos; everything stays in their own browser.
+Préparer un séjour à Paris, sans compte. Chaque visiteur indique ses dates, ses trains, son hôtel et ses photos ; tout reste dans son propre navigateur.
 
-Photos of places: Wikimedia Commons and the places’ own sites (credits on each page). Maps: © OpenStreetMap contributors.
+Photos des lieux : Wikimedia Commons et les sites des lieux (crédits sur chaque fiche). Cartes : © contributeurs OpenStreetMap.
