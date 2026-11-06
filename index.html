@@ -147,8 +147,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* ---------- Mon programme ---------- */
 .programme-paris[hidden] { display: none; }
 body.vue-programme #adresses, body.vue-programme #carte { display: none; }
-.themes-nav .vers-programme, .themes-nav .vers-depenses, .themes-nav .vers-carte, .themes-nav .vers-circuits, .themes-nav .vers-autour, .themes-nav .vers-booke { color: var(--encre); background: transparent; border: 1px solid var(--laiton); box-shadow: none; border-radius: 6px; font-weight: 500; }
-.themes-nav .vers-programme.actif, .themes-nav .vers-depenses.actif, .themes-nav .vers-carte.actif, .themes-nav .vers-circuits.actif, .themes-nav .vers-autour.actif, .themes-nav .vers-booke.actif, .themes-nav .vers-carte:hover { background: var(--laiton); color: #fff; border-color: var(--laiton); box-shadow: none; }
+.themes-nav .vers-programme, .themes-nav .vers-depenses, .themes-nav .vers-carte, .themes-nav .vers-circuits, .themes-nav .vers-autour, .themes-nav .vers-booke, .themes-nav .vers-carnet { color: var(--encre); background: transparent; border: 1px solid var(--laiton); box-shadow: none; border-radius: 6px; font-weight: 500; }
+.themes-nav .vers-programme.actif, .themes-nav .vers-depenses.actif, .themes-nav .vers-carte.actif, .themes-nav .vers-circuits.actif, .themes-nav .vers-autour.actif, .themes-nav .vers-booke.actif, .themes-nav .vers-carnet.actif, .themes-nav .vers-carte:hover { background: var(--laiton); color: #fff; border-color: var(--laiton); box-shadow: none; }
 .prog-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
 .prog-intro { color: var(--muted); font-size: .92rem; margin: 0 0 20px; max-width: 62ch; }
 .prog-vide { padding: 28px; border: 1px dashed var(--laiton); border-radius: var(--rayon); background: var(--carte); }
@@ -162,6 +162,10 @@ body.vue-programme #adresses, body.vue-programme #carte { display: none; }
 .jours-onglets button[aria-selected="true"] { background: var(--laiton); border-color: var(--laiton); color: #fff; }
 .jours-onglets button[aria-selected="true"] span { color: #fff; }
 .h-case input { width: 20px; height: 20px; accent-color: var(--laiton); }
+/* iPhone (6/11) : la case héritait du style des champs d'heure (largeur 100 %, fond sombre) : Safari l'étirait et écrasait le libellé, un mot par ligne */
+.h-champ.h-case { flex-direction: row !important; align-items: center; justify-content: space-between; gap: 10px; }
+.h-champ.h-case > span { flex: 1 1 auto; min-width: 0; }
+.h-champ.h-case input[type=checkbox] { -webkit-appearance: checkbox; appearance: auto; flex: 0 0 22px; width: 22px !important; max-width: 22px; height: 22px; min-width: 22px; padding: 0; margin: 0; border: 0; background: none; accent-color: var(--laiton); }
 @media print { .jours-onglets { display: none !important; } .prog-jour[hidden] { display: block !important; } }
 .prog-tete { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 2px solid var(--encre); margin-bottom: 12px; }
 .prog-tete .prog-date { margin: 0; display: grid; place-items: center; width: 84px; font-size: .64rem !important; color: #fff !important; padding: 6px 0; background: var(--email); color: #fff; border: 3px solid #fff; box-shadow: 0 0 0 2px var(--email); border-radius: 6px; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; line-height: 1.1; flex: none; }
@@ -917,7 +921,7 @@ footer strong { color: #eef1f3; font-weight: 500; }
 
 /* ---------- Tablette et téléphone ---------- */
 @media (max-width: 1080px) {
-  .layout { grid-template-columns: minmax(0, 1fr); padding-bottom: 110px; }
+  .layout { grid-template-columns: minmax(0, 1fr); padding-bottom: 24px; }
   .carnet { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 40; max-height: 82vh; border-radius: 14px 14px 0 0; transform: translateY(105%); transition: transform .28s ease; padding-left: var(--gutter-l); padding-right: var(--gutter-r); padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -16px 40px rgba(0, 0, 0, .25); }
   .carnet.ouvert { transform: none; }
   .tiroir-fond.ouvert { display: block; position: fixed; inset: 0; z-index: 35; background: rgba(10, 16, 22, .5); }
@@ -928,7 +932,7 @@ footer strong { color: #eef1f3; font-weight: 500; }
   .barre-mobile .jauge { margin: 0; height: 4px; background: rgba(255, 255, 255, .15); }
   .barre-mobile button { background: var(--laiton-vif); color: #17120a; border: 0; border-radius: var(--rayon); padding: 9px 14px; font-weight: 500; cursor: pointer; flex: none; }
   .fermer-tiroir { display: inline-block !important; }
-  .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 34px; padding-bottom: 190px; }
+  .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 34px; padding-bottom: 110px; }
   .carte-postale { justify-self: start; max-width: 360px; }
   .envoi .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; }
 }
@@ -1019,6 +1023,23 @@ footer { background: rgba(8, 13, 20, .92); }
 .liens a:hover { border-color: var(--laiton); color: var(--laiton); }
 @media (max-width: 560px) { .infos { grid-template-columns: minmax(0, 1fr); } .fiche { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); } }
 
+
+/* iPhone (6/11) : Safari iOS ignore aspect-ratio sur ces cadres (contenu en absolu, item de grille étiré) et leur donne une hauteur nulle.
+   La hauteur vient maintenant d'un ::before en padding-top, compris par tous les navigateurs ; le rapport est dans --rc. */
+.itin .itin-carte, .circ-carte.zc, .circ-corps.circ-v .circ-carte, .aut-carte, .rdv-carte { aspect-ratio: auto !important; min-height: 0 !important; height: auto; }
+.itin .itin-carte::before, .circ-carte.zc::before, .circ-corps.circ-v .circ-carte::before, .aut-carte::before, .rdv-carte::before { content: ""; display: block; padding-top: calc(100% / var(--rc, 1.2)); pointer-events: none; }
+.itin .itin-carte { --rc: 1.2; }
+.circ-carte.zc:not(.mardi-carte) { --rc: 1.25; }
+.circ-corps.circ-v .circ-carte { --rc: 1.7778; }
+.circ-carte.mardi-carte { --rc: 1.9; }
+.aut-carte, .circ-carte.aut-carte { --rc: 1.15; }
+.rdv-carte, .circ-carte.rdv-carte { --rc: 1.15; }
+@media (max-width: 860px) { .circ-carte.zc:not(.mardi-carte) { --rc: 1.1; } .circ-corps.circ-v .circ-carte { --rc: 1.7778; } .aut-carte, .circ-carte.aut-carte { --rc: .9; } .rdv-carte, .circ-carte.rdv-carte { --rc: 1.15; } }
+@media (max-width: 640px) { .circ-carte.mardi-carte, .circ-carte.zc.mardi-carte { --rc: 1.1; } .circ-corps.circ-v .circ-carte { --rc: 1.1; } }
+
+/* 6/11 : plus de bandeau permanent en bas (compteur + jauges) ; « My notebook » est un onglet en haut */
+.barre-mobile, #barre-mobile { display: none !important; }
+#carnet.eclair { box-shadow: 0 0 0 3px var(--laiton-vif); transition: box-shadow .3s; }
 </style>
 </head>
 <body>
@@ -1916,7 +1937,7 @@ function rendreAdresses() {
       <div class="theme-head"><span class="num">${String(i + 1).padStart(2, "0")}</span><h2 id="h-${t.ancre}">${t.titre}</h2><p>${t.intro}</p></div>
       ${grilleTheme(t, lieux)}</section>`;
   }).join("");
-  nav.innerHTML = `<li><a href="#programme" class="vers-programme">My itinerary</a></li><li><a href="#depenses" class="vers-depenses">Expenses</a></li><li><a href="#carte" class="vers-carte">The map</a></li><li><a href="#circuits" class="vers-circuits">Walking routes</a></li><li><a href="#booke" class="vers-booke">✓ Already booked</a></li><li><a href="#autour" class="vers-autour">📍 Around me</a></li>` + ["noel", "balade", "rues", "musee", "resto", "cafe", "artisan", "shopping"].map(c => THEMES.find(t => t.cle === c)).filter(Boolean).map(t => `<li><a href="#${t.ancre}" data-ancre="${t.ancre}">${t.titre}<span class="n">${LIEUX.filter(l => l.theme === t.cle).length}</span></a></li>`).join("");
+  nav.innerHTML = `<li><a href="#programme" class="vers-programme">My itinerary</a></li><li><a href="#mon-carnet" class="vers-carnet" data-ouvrir-carnet="1">📓 My notebook</a></li><li><a href="#depenses" class="vers-depenses">Expenses</a></li><li><a href="#carte" class="vers-carte">The map</a></li><li><a href="#circuits" class="vers-circuits">Walking routes</a></li><li><a href="#booke" class="vers-booke">✓ Already booked</a></li><li><a href="#autour" class="vers-autour">📍 Around me</a></li>` + ["noel", "balade", "rues", "musee", "resto", "cafe", "artisan", "shopping"].map(c => THEMES.find(t => t.cle === c)).filter(Boolean).map(t => `<li><a href="#${t.ancre}" data-ancre="${t.ancre}">${t.titre}<span class="n">${LIEUX.filter(l => l.theme === t.cle).length}</span></a></li>`).join("");
   main.querySelectorAll(".photo img").forEach(img => {
     const fig = img.closest(".photo");
     const ok = () => fig.classList.add("ok");
@@ -2733,6 +2754,11 @@ function duelHtml() {
 const carnetEl = document.getElementById("carnet"), fond = document.getElementById("tiroir-fond");
 function tiroir(ouvert) { carnetEl.classList.toggle("ouvert", ouvert); fond.classList.toggle("ouvert", ouvert); document.getElementById("ouvrir-tiroir").setAttribute("aria-expanded", ouvert); }
 document.getElementById("ouvrir-tiroir").addEventListener("click", () => tiroir(true));
+// onglet « My notebook » (6/11) : tiroir sur téléphone et tablette, carnet de droite mis en évidence sur grand écran
+document.addEventListener("click", e => { try { const a = e.target.closest && e.target.closest("[data-ouvrir-carnet]"); if (!a) return; e.preventDefault();
+  if (matchMedia("(max-width: 1080px)").matches) tiroir(true);
+  else { carnetEl.scrollIntoView({ behavior: "smooth", block: "start" }); carnetEl.classList.add("eclair"); setTimeout(() => carnetEl.classList.remove("eclair"), 1200); }
+} catch (_) {} });
 document.getElementById("fermer-tiroir").addEventListener("click", () => tiroir(false));
 fond.addEventListener("click", () => tiroir(false));
 document.getElementById("vers-envoi").addEventListener("click", () => tiroir(false));
@@ -4934,7 +4960,7 @@ afficherVue();
   <div id="sp-corps"></div>
 </div>
 <style>
-#sp-ouvrir { position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); z-index: 35;
+#sp-ouvrir { position: fixed; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); z-index: 35;
   display: flex; align-items: center; gap: 8px; padding: 10px 16px 10px 12px; border: 0; border-radius: 999px; background: var(--email, #1f4c8f); color: #fff;
   font: 600 .9rem/1 Jost, system-ui, sans-serif; box-shadow: 0 6px 18px rgba(0,0,0,.3); }
 #sp-ouvrir span { display: inline-block; transform: rotate(-45deg); font-size: 1rem; }
