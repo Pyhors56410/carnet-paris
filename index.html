@@ -5099,5 +5099,30 @@ afficherVue();
   });
 })();
 </script>
+<script>
+/* Correctif iPhone (6/11) : Safari ignore parfois aspect-ratio sur un élément de grille étiré dont le seul
+   contenu est un SVG en position absolue (cartes d'itinéraire, de balade, « Around me »…) : la boîte reste à
+   0 px de haut et la carte n'apparaît pas. On donne alors la hauteur à la main, d'après le ratio prévu. */
+(function () {
+  var SEL = ".itin-carte, .circ-carte, .zc";
+  function regler() {
+    document.querySelectorAll(SEL).forEach(function (el) {
+      var ar = getComputedStyle(el).aspectRatio, m = /([\d.]+)\s*(?:\/\s*([\d.]+))?/.exec(ar || "");
+      if (!m || ar === "auto") { if (el.dataset.hauteurIos) { el.style.height = ""; delete el.dataset.hauteurIos; } return; }
+      var r = parseFloat(m[1]) / (m[2] ? parseFloat(m[2]) : 1), w = el.getBoundingClientRect().width;
+      if (!w && el.offsetParent) w = el.parentElement.getBoundingClientRect().width;
+      if (!r || !w) return;
+      var voulu = Math.round(w / r);
+      if (el.dataset.hauteurIos || Math.abs(el.clientHeight - voulu) > 4) { el.style.height = voulu + "px"; el.dataset.hauteurIos = "1"; }
+    });
+  }
+  var attente = null;
+  function plusTard() { if (!attente) attente = requestAnimationFrame(function () { attente = null; regler(); }); }
+  new MutationObserver(plusTard).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("resize", plusTard);
+  window.addEventListener("orientationchange", plusTard);
+  plusTard();
+})();
+</script>
 </body>
 </html>
